@@ -90,6 +90,8 @@ $(document).ready(function() {
          $dialogContent.dialog({
             modal: true,
             title: "Edit - " + calEvent.title,
+            draggable: false,
+            resizable: false,
             close: function() {
                $dialogContent.dialog("destroy");
                $dialogContent.hide();
