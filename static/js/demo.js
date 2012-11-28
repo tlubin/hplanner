@@ -25,39 +25,92 @@ $(document).ready(function() {
                     selectable: true,
                     selectHelper: true,
                     select: function(start, end, allDay) {
-                        var title = prompt('Event Title:');
-                        if (title) {
-                            calendar.fullCalendar('renderEvent',
-                                {
-                                    title: title,
-                                    start: start,
-                                    end: end,
-                                    allDay: allDay
-                                },
-                                true // make the event "stick"
-                            );
-                            // add to database AJAX
-                        }
-                        calendar.fullCalendar('unselect');
-                    },
-                    events: user_events,
-                    eventClick: function(calEvent, jsEvent, view) {
-                        var $settings = $("#settings");
-                        $settings.dialog({
-                            title: calEvent.title,
+                        var $dialogContent = $("#event_edit_container");
+                        $dialogContent.dialog({
+                            title: "New Event:",
                             width: 400,
                             draggable: false,
                             resizable: false,
                             close: function() {
-                                $settings.dialog("destroy");
-                                $settings.hide();
+                                $dialogContent.dialog("destroy");
+                                $dialogContent.hide();
                             },
                             buttons: {
-                                'Save Changes' : function() {
-                                    $settings.dialog("close");
+                                save : function() {
+                                    var new_title = $("#title").val();
+                                    if (new_title) {
+                                        var new_event = {
+                                            title: new_title,
+                                            start: start,
+                                            end: end,
+                                            allDay: allDay
+                                        };
+                                        calendar.fullCalendar('renderEvent', new_event, true);
+//                                        $.ajaxSetup({
+//                                            data: {csrfmiddlewaretoken: '{{ csrf_token }}' }
+//                                        });
+
+                                        // TODO add to database AJAX (ignores output, should change)
+                                        $.ajax(
+                                            {
+                                                type:"POST",
+                                                url:'add_event',
+                                                data: new_event,
+                                                dataType: "json",
+                                                success: function (data) {
+                                                    alert("success");
+                                                }
+                                            }
+                                        );
+                                    }
+                                    calendar.fullCalendar('unselect');
+                                    $dialogContent.dialog("close");
+
+                                    // TODO update event in database with AJAX
+                                },
+                                cancel : function() {
+                                    $dialogContent.dialog("close");
                                 }
                             }
                         }).show();
+                    },
+                    events: user_events,
+                    eventClick: function(calEvent, jsEvent, view) {
+                        var $dialogContent = $("#event_edit_container");
+                        var titleField = $dialogContent.find("input[id='title']").val(calEvent.title);
+                        $dialogContent.dialog({
+                            title: "Edit - " + calEvent.title,
+                            width: 400,
+                            draggable: false,
+                            resizable: false,
+                            close: function() {
+                                $dialogContent.dialog("destroy");
+                                $dialogContent.hide();
+                            },
+                            buttons: {
+                                save : function() {
+
+                                  //  calEvent.start =
+                                  //  calEvent.end =
+                                    calEvent.title = titleField.val();
+
+                                    calendar.fullCalendar("renderEvent", calEvent);
+                                    $dialogContent.dialog("close");
+
+                                    // TODO update event in database with AJAX
+                                },
+                                delete : function() {
+                                    $dialogContent.dialog("close");
+                                    calendar.fullCalendar("removeEvents", calEvent.id);
+                                    calender.fullCalendar("render");
+
+                                    // TODO delete event from database with AJAX
+                                },
+                                cancel : function() {
+                                    $dialogContent.dialog("close");
+                                }
+                            }
+                         }).show();
                     }
 
                 });
@@ -87,6 +140,7 @@ $(document).ready(function() {
 
 });
 
+
 /*
  * Takes in JSON of events from database and returns an array of Event Objects to be
  * passed to the fullCalendar
@@ -114,6 +168,7 @@ function JSONtoEVENTS (json) {
         // required fields
         event["title"] = json_event["fields"]["title"];
         event["start"] = json_event["fields"]["start"];
+        event["id"] = json_event["pk"];
 
         // optional fields
         if (json_event["fields"]["allDay"])

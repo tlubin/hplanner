@@ -12,3 +12,8 @@ def get_events(request):
         json_data = serializers.serialize('json', events)
         return HttpResponse (json_data, mimetype='application/json')
 
+def add_event(request):
+    print "testSAKJLDJAKS"
+#    event = request.POST
+#    event.save()
+    return HttpResponse("TEST")
