@@ -40,33 +40,30 @@ $(document).ready(function() {
                                     var new_title = $("#title").val();
                                     if (new_title) {
                                         var new_event = {
+                                            // TODO give it an id!!!
                                             title: new_title,
                                             start: start,
                                             end: end,
                                             allDay: allDay
                                         };
                                         calendar.fullCalendar('renderEvent', new_event, true);
-//                                        $.ajaxSetup({
-//                                            data: {csrfmiddlewaretoken: '{{ csrf_token }}' }
-//                                        });
+                                        calendar.fullCalendar('unselect');
+                                        $dialogContent.dialog("close");
 
+                                        alert(JSON.stringify(new_event));
                                         // TODO add to database AJAX (ignores output, should change)
                                         $.ajax(
                                             {
-                                                type:"POST",
-                                                url:'add_event',
-                                                data: new_event,
-                                                dataType: "json",
+                                                type: "POST",
+                                                url: 'add_event',
+//                                                data: json_data,
+//                                                dataType: "json",
                                                 success: function (data) {
                                                     alert("success");
                                                 }
                                             }
                                         );
                                     }
-                                    calendar.fullCalendar('unselect');
-                                    $dialogContent.dialog("close");
-
-                                    // TODO update event in database with AJAX
                                 },
                                 cancel : function() {
                                     $dialogContent.dialog("close");
