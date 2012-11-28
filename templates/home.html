@@ -7,11 +7,26 @@
     <link rel="stylesheet" href="{% static 'css/fullcalendar.css' %}" type="text/css" />
     <link rel="stylesheet" href="{% static 'css/demo.css' %}" type="text/css" />
     <link rel='stylesheet' type='text/css' href='http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.2/themes/cupertino/jquery-ui.css' />
+    <!-- static files for the todo_ -->
+    <link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/themes/base/jquery-ui.css" type="text/css" media="all" />
+    <link rel="stylesheet" href="http://static.jquery.com/ui/css/demo-docs-theme/ui.theme.css" type="text/css" media="all" />
+    <link rel="stylesheet" href="{% static 'css/todo.css' %}" type="text/css" />
 
     <script type='text/javascript' src='http://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js'></script>
     <script type='text/javascript' src='http://code.jquery.com/ui/1.7.2/jquery-ui.js'></script>
+    <!-- these are for the todo_ -->
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js" type="text/javascript"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js" type="text/javascript"></script>
+    <script src="http://jquery-ui.googlecode.com/svn/tags/latest/external/jquery.bgiframe-2.1.2.js" type="text/javascript"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/i18n/jquery-ui-i18n.min.js" type="text/javascript"></script>
+    <script src="./jquery-ui-1.8.16.custom/development-bundle/ui/jquery.ui.core.js"></script>
+    <script src="./jquery-ui-1.8.16.custom/development-bundle/ui/jquery.ui.widget.js"></script>
+    <script src="./jquery-ui-1.8.16.custom/development-bundle/ui/jquery.ui.mouse.js"></script>
+    <script src="./jquery-ui-1.8.16.custom/development-bundle/ui/jquery.ui.sortable.js"></script>
+
     <script type='text/javascript' src="{%  static 'js/fullcalendar.js' %}"></script>
     <script type='text/javascript' src="{%  static 'js/demo.js' %}"></script>
+    <script type='text/javascript' src="{%  static 'js/todo.js' %}"></script>
 
 </head>
 <body>
@@ -20,13 +35,14 @@
     <button type="button" id="settings_button">Settings</button>
 </div>
 <div id='calendar'></div>
-<div id="todo">
-    <h2>Todo List</h2>
-    <br/>
-    This will be the todo list!
-    <br/>
-    1) Finish this project!
-    2) Publish this project!
+<div id="todo_div">
+    <h3>Add Item To Do</h3>
+    <form>
+        <input id="todo"/> <a href="#" id="add-item">Add Item</a>
+        <p/>
+        <h3 id="items-header">Items</h3><a href="#" id="remove-all">Remove All</a>
+        <ul id="items" class="sortable"></ul>
+    </form>
 </div>
 <div id="edit_event_container">
 

@@ -41,7 +41,7 @@ p {
     margin: 0 auto;
 }
 
-#todo {
+#todo_div {
     width: 25%;
     float: right;
 }

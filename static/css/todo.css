@@ -1,0 +1,10 @@
+ul.sortable { list-style-type: none; margin: 0; padding: 0; width: 100%; }
+ul.sortable li { margin: 0 3px 3px 3px; padding: 0.4em; padding-left: 1.5em; font-size: 1em; height: 18px; }
+ul.sortable li span { position: absolute; margin-left: -1.3em; margin-top: -1.2em; }
+ul.sortable li { background-color: #C0C0C0; }
+/*body { background-color: #00FFFF }*/
+form h3 { display: inline }
+a#remove-all { margin-left: 7.7em; color:black; }
+a:hover#remove-all { color:#F68 !important }
+a#add-item { margin-left: .5em; color:black }
+a:hover#add-item { color:green !important }
