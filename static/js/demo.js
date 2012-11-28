@@ -42,19 +42,19 @@ $(document).ready(function() {
                     },
                     events: user_events,
                     eventClick: function(calEvent, jsEvent, view) {
-                        var $settings = $("#settings");
-                        $settings.dialog({
+                        var $edit_container = $("#event_edit_container");
+                        $edit_container.dialog({
                             title: calEvent.title,
                             width: 400,
                             draggable: false,
                             resizable: false,
                             close: function() {
-                                $settings.dialog("destroy");
-                                $settings.hide();
+                                $edit_container.dialog("destroy");
+                                $edit_container.hide();
                             },
                             buttons: {
                                 'Save Changes' : function() {
-                                    $settings.dialog("close");
+                                    $edit_container.dialog("close");
                                 }
                             }
                         }).show();

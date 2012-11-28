@@ -8,8 +8,9 @@
     <link rel="stylesheet" href="{% static 'css/demo.css' %}" type="text/css" />
     <link rel='stylesheet' type='text/css' href='http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.2/themes/cupertino/jquery-ui.css' />
 
-    <script type='text/javascript' src='http://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js'></script>
     <script type='text/javascript' src='http://code.jquery.com/ui/1.7.2/jquery-ui.js'></script>
+    <script type='text/javascript' src='http://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js'></script>
+{#    <script type='text/javascript' src="{% static 'js/jquery-ui-1.8.23.custom.min.js' %}"></script>#}
     <script type='text/javascript' src="{%  static 'js/fullcalendar.js' %}"></script>
     <script type='text/javascript' src="{%  static 'js/demo.js' %}"></script>
 
@@ -28,7 +29,26 @@
     1) Finish this project!
     2) Publish this project!
 </div>
-<div id="edit_event_container">
+<div id="event_edit_container">
+    <form>
+        <input type="hidden" />
+        <ul>
+            <li>
+                <span>Date: </span><span class="date_holder"></span>
+            </li>
+            <li>
+                <label for="start">Start Time: </label>
+                <select id="start" name="start"><option value="">Select Start Time</option></select>
+            </li>
+            <li>
+                <label for="end">End Time: </label>
+                <select id="end" name="end"><option value="">Select End Time</option></select>
+            </li>
+            <li>
+                <label for="title">Title: </label><input id="title"  type="text" name="title" />
+            </li>
+        </ul>
+    </form>
 
 </div>
 <div id="settings">
