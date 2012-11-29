@@ -21,6 +21,20 @@ function initializeForm() {
 
     // the items list will be sortable.
     $( "ul#items" ).sortable().disableSelection();
+
+
+    // populate the to do list with all the tasks in the database
+    $.ajax(
+        {
+            type:"GET",
+            url:'get_tasks',
+            dataType: "json",
+            success: function (data)
+            {
+                JSONtoTASKS(data);
+            }
+        }
+    )
 }
 
 function removeAllItems() {
@@ -44,7 +58,7 @@ function addItem() {
     listItem.show('slow');
 
     // remove the corresponding list item when remove is clicked.
-    listItem.find("a").click( function() {
+    listItem.find("#checker").click( function() {
         $(this).parent().hide('slow', function() { $(this).remove(); });
     });
 
@@ -57,14 +71,36 @@ function buildListItemHidden( itemTodo, itemId ) {
         { id : "item[" + itemId + "]" } ).
         css( {'cursor' : 'pointer', 'color' : 'black'} );
 
-    var spanForImage = $("<span></span>").addClass("ui-icon ui-icon-arrowthick-2-n-s");
-    var removeLink = buildRemoveLink();
+    var checkbox = $('<input type="checkbox" id="checker"/>').css('float', 'right');
 
-    return listItem.addClass('ui-state-default').prepend( spanForImage ).prepend( removeLink ).hide();
+    return listItem.addClass('ui-state-default').append( checkbox ).hide();
 }
 
-function buildRemoveLink() {
-    return $("<a href='#'>Remove: </a>" ).css('color','#555555').hover(
-        function(){ $(this).css('color', '#F68'); },
-        function(){ $(this).css('color', '#555555'); } )
+
+function JSONtoTASKS(json)
+{
+    // array of new tasks we'll build
+    var new_tasks = {};
+
+    //convert the json to this other format and add items to list
+    for (var index in json)
+    {
+        var new_task = {};
+        var json_task = json[index];
+
+        // required fields
+        new_task["title"] = json_task["fields"]["title"];
+
+        // optional fields ToDO: change the .js file here to incorporate due dates, may also need to store id later on
+
+        // add new task to array
+        var listItem = buildListItemHidden( new_task["title"], itemCount++ );
+        $("ul#items").append( listItem );
+        listItem.show();
+
+        // set up the check box that kills it (from addItem)
+        listItem.find("#checker").click( function() {
+            $(this).parent().hide('slow', function() { $(this).remove(); });
+        });
+    }
 }

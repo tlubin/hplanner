@@ -9,6 +9,8 @@ urlpatterns = patterns('',
     url(r'^$', 'harvardplanner.views.home'),
     url(r'^get_events', 'cal.views.get_events'),
     url(r'^add_event', 'cal.views.add_event'),
+    url(r'^get_tasks', 'to_do.views.get_tasks'),
+    url(r'^add_task', 'to_do.views.add_task'),
     # url(r'^harvardplanner/', include('harvardplanner.foo.urls')),
 
     # Uncomment the admin/doc line below to enable admin documentation:
