@@ -24,6 +24,7 @@ $(document).ready(function() {
                     editable: true,
                     selectable: true,
                     selectHelper: true,
+                    events: user_events,
                     select: function(start, end, allDay) {
                         var $dialogContent = $("#event_edit_container");
                         $dialogContent.dialog({
@@ -45,28 +46,29 @@ $(document).ready(function() {
                                             end: end,
                                             allDay: allDay
                                         };
-                                        calendar.fullCalendar('renderEvent', new_event, true);
-//                                        $.ajaxSetup({
-//                                            data: {csrfmiddlewaretoken: '{{ csrf_token }}' }
-//                                        });
 
-                                        // TODO add to database AJAX (ignores output, should change)
+                                        // TODO: this should be done cleaner by using the function already made
+                                        // add event to database
                                         $.ajax(
                                             {
-                                                type:"POST",
-                                                url:'add_event',
-                                                data: new_event,
-                                                dataType: "json",
+                                                type: "POST",
+                                                url: 'add_event',
+                                                data:$.param(new_event),
+                                                dataType: "text",
                                                 success: function (data) {
-                                                    alert("success");
+                                                    alert(data);
+                                                    // set id of new event
+                                                    new_event['id'] = parseInt(data);
                                                 }
                                             }
                                         );
-                                    }
-                                    calendar.fullCalendar('unselect');
-                                    $dialogContent.dialog("close");
 
-                                    // TODO update event in database with AJAX
+                                        // update calendar and dialog display
+                                        calendar.fullCalendar('renderEvent', new_event, true);
+                                        calendar.fullCalendar('unselect');
+                                        $dialogContent.dialog("close");
+
+                                    }
                                 },
                                 cancel : function() {
                                     $dialogContent.dialog("close");
@@ -74,7 +76,6 @@ $(document).ready(function() {
                             }
                         }).show();
                     },
-                    events: user_events,
                     eventClick: function(calEvent, jsEvent, view) {
                         var $dialogContent = $("#event_edit_container");
                         var titleField = $dialogContent.find("input[id='title']").val(calEvent.title);
@@ -90,29 +91,42 @@ $(document).ready(function() {
                             buttons: {
                                 save : function() {
 
-                                  //  calEvent.start =
-                                  //  calEvent.end =
-                                    calEvent.title = titleField.val();
+                                    if (calEvent.title != titleField.val()) {
+                                        // update title of event
+                                        calEvent.title = titleField.val();
+
+                                        // update database
+                                        makePOST('update_event', calEvent);
+                                    }
 
                                     calendar.fullCalendar("renderEvent", calEvent);
                                     $dialogContent.dialog("close");
 
-                                    // TODO update event in database with AJAX
                                 },
                                 delete : function() {
+                                    // delete event from database
+                                    makePOST('remove_event', calEvent);
+
+                                    // update calendar and close dialog
                                     $dialogContent.dialog("close");
                                     calendar.fullCalendar("removeEvents", calEvent.id);
                                     calender.fullCalendar("render");
 
-                                    // TODO delete event from database with AJAX
                                 },
                                 cancel : function() {
                                     $dialogContent.dialog("close");
                                 }
                             }
                          }).show();
+                    },
+                    eventDrop: function( event, dayDelta, minuteDelta, allDay, revertFunc, jsEvent, ui, view ) {
+                        // update database
+                        makePOST('update_event', event);
+                    },
+                    eventResize: function( event, dayDelta, minuteDelta, revertFunc, jsEvent, ui, view ) {
+                        // update database
+                        makePOST('update_event', event);
                     }
-
                 });
             }
         });
@@ -180,4 +194,25 @@ function JSONtoEVENTS (json) {
         events.push(event);
     }
     return events;
+}
+
+/*
+ * Takes in a url for the ajax POST request along with
+ * the event Javascript object to be passed and makes the
+ * appropriate ajax request with the data.
+ */
+
+function makePOST(url, event) {
+    $.ajax(
+        {
+            type: "POST",
+            url: url,
+            data:$.param(event),
+            dataType: "text",
+            success: function (data) {
+                alert(data);
+            }
+        }
+    );
+
 }
