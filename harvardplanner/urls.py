@@ -6,9 +6,13 @@ from django.conf.urls import patterns, include, url
 
 urlpatterns = patterns('',
     # Examples:
+    # TODO: abstract out the urls for the calendar into its own urls.py
     url(r'^$', 'harvardplanner.views.home'),
     url(r'^get_events', 'cal.views.get_events'),
     url(r'^add_event', 'cal.views.add_event'),
+    url(r'^update_event', 'cal.views.update_event'),
+    url(r'^remove_event', 'cal.views.remove_event'),
+
     # url(r'^harvardplanner/', include('harvardplanner.foo.urls')),
 
     # Uncomment the admin/doc line below to enable admin documentation:
