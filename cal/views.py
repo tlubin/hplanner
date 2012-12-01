@@ -4,7 +4,6 @@ from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from datetime import datetime
 import re
-from django.utils import simplejson
 
 
 def get_events(request):
@@ -25,11 +24,11 @@ def add_event(request):
 
     # make new event and save
     event = Event(
-                title=title,
-                start=start,
-                end=end,
-                allDay=allDay
-            )
+        title=title,
+        start=start,
+        end=end,
+        allDay=allDay
+    )
     event.save()
 
     # return the id of the new event

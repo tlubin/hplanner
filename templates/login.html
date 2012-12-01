@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+<head>
+    {% load staticfiles %}
+    <script type='text/javascript' src='http://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js'></script>
+    <script type='text/javascript' src="{%  static 'js/login.js' %}"></script>
+
+
+</head>
+<body style="text-align: center">
+<h1>
+    Simple Login Page
+</h1>
+<div id="login_fields">
+    Username<input id="userid" type="text"/>
+    <br/>
+    Password<input id="pword" type="password"/>
+    <br/>
+    <input type="button" id="login_button" value="Login" />
+</div>
+<div id="login_message" style="color: #ff0000"></div>
+<div id="register_fields">
+    <h2> Or Register (for free!) </h2>
+    Username<input id="new_id" type="text"/>
+    <br/>
+    Password<input id="new_pword" type="password"/>
+    <br/>
+    Confirm Password<input id="new_pword2" type="password"/>
+    <br/>
+    <input type="button" id="register_button" value="Register" />
+</div>
+<div id="register_message" style="color: #ff0000"></div>
+
+</body>
+</html>

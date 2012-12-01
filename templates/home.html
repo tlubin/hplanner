@@ -24,7 +24,7 @@
     <script type='text/javascript' src="{%  static 'js/fullcalendar.js' %}"></script>
     <script type='text/javascript' src="{%  static 'js/main.js' %}"></script>
     <script type='text/javascript' src="{%  static 'js/todo.js' %}"></script>
-    <script type='text/javascript' src="{%  static 'js/json_stringify.js' %}"></script>
+    <script type='text/javascript' src="{%  static 'js/cal.js' %}"></script>
 
 
 </head>
@@ -32,6 +32,7 @@
 <h1>Harvard Planner</h1>
 <div id="settings_container">
     <button type="button" id="settings_button">Settings</button>
+    <button type="button" id="logout_button" onclick="location.href='logout'"> Logout</button>
 </div>
 <div id='calendar'></div>
 <div id="todo_div">
@@ -40,6 +41,7 @@
         <input type="text" id="todo_input"/>
         <a href="javascript: void(0)" id="add-item">Add Item</a>
     </form>
+    <br/>
     <ul id="items" class="sortable"></ul>
 </div>
 <div id="event_edit_container">
@@ -51,7 +53,6 @@
             </li>
         </ul>
     </form>
-
 </div>
 <div id="settings">
     <h2>Settings</h2>
@@ -62,3 +63,5 @@
 </div>
 </body>
 </html>
+
+

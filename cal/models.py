@@ -13,4 +13,4 @@ class Event(models.Model):
     end = models.DateTimeField(null = True)
     def __unicode__(self):
         return self.title
-    # TODO group for event, what calendar it is in, repeat
+        # TODO group for event, user id, repeat

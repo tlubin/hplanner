@@ -75,7 +75,7 @@ function LOADTASKS()
     $.ajax(
         {
             type:"GET",
-            url:'get_tasks',
+            url:'todo/get_tasks',
             dataType: "json",
             success: function (data)
             {
@@ -106,7 +106,7 @@ function ADDtoDATABASE($listItem)
     $.ajax(
         {
             type: "POST",
-            url: 'add_task',
+            url: 'todo/add_task',
             data:$.param(item_to_send),
             dataType: "text",
             success: function (data){
@@ -126,7 +126,7 @@ function REMOVEfromDATABASE(id_to_delete)
     $.ajax(
         {
             type: "POST",
-            url: 'remove_task',
+            url: 'todo/remove_task',
             data: $.param(item_to_send),
             dataType: "text"
         }
