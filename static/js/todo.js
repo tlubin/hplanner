@@ -1,5 +1,3 @@
-var itemCount = 0;
-
 $(document).ready( initializeForm );
 
 function initializeForm() {
@@ -15,10 +13,11 @@ function initializeForm() {
         if(e.which==13) { e.preventDefault(); addItem(); }
     });
 
+
     // the items list will be sortable.
     $( "ul#items" ).sortable({
         update: function( event, ui ) {
-
+            UpdateOrder($(this).sortable('toArray'));
         }
     }).disableSelection();
 
@@ -26,6 +25,22 @@ function initializeForm() {
     LOADTASKS();
 }
 
+function UpdateOrder(array)
+{
+    // build a specially-formatted string and send over the new order to the server
+    var item_to_send = {
+        text: array.toString()
+    };
+
+    $.ajax(
+        {
+            type: "POST",
+            url: 'todo/update_order',
+            data: $.param(item_to_send),
+            dataType: "text"
+        }
+    );
+}
 
 function addItem() {
 
@@ -55,11 +70,12 @@ function AppendItem( itemTitle, itemId) {
     $listItem.attr('id', itemId);
     $listItem.hide();
 
-//    remove the corresponding list item when remove is clicked.
+//  remove the corresponding list item when remove is clicked, and update the TaskManager to store the new order
     $listItem.find("#checker").click( function() {
         REMOVEfromDATABASE($(this).parent().attr("id"));
         $(this).parent().hide('slow', function() {
             $(this).remove();
+            UpdateOrder($("ul#items").sortable('toArray'));
         });
     });
 
@@ -89,12 +105,30 @@ function LOADTASKS()
 
 function JSONtoTASKS(json)
 {
-    //convert the json to this other format and add items to list
-    for (var index in json)
-    {
-        task = json[index];
-        AppendItem(task["fields"]["title"], task["pk"]);
-    }
+    $.ajax(
+        {
+            type:"GET",
+            url:'todo/get_order',
+            dataType: "json",
+            success: function (data)
+            {
+                // get the order of elements as an array
+                csv_order = data[0]["fields"]["order"];
+                order = csv_order.split(',');
+
+                // for each element of the order array, pick out the task with that id and render it
+                for (var i = 0, n = order.length; i < n; i++)
+                {
+                    for (index in json)
+                    {
+                        task = json[index];
+                        if (task["pk"] == order[i])
+                            AppendItem(task["fields"]["title"], task["pk"]);
+                    }
+                }
+            }
+        }
+    );
 }
 
 function ADDtoDATABASE($listItem)
@@ -111,6 +145,8 @@ function ADDtoDATABASE($listItem)
             dataType: "text",
             success: function (data){
                 $listItem.attr('id', data);
+                // now that this id has gone through, update the database ordering
+                UpdateOrder($( "ul#items" ).sortable('toArray'));
             }
         }
     )

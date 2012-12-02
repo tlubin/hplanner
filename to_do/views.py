@@ -1,8 +1,22 @@
 from django.core import serializers
-from to_do.models import Task
+from to_do.models import Task, TaskManager
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
+
+@csrf_exempt
+def update_order(request):
+
+    # clear the ordering
+    TaskManager.objects.all().delete()
+
+
+    # make new ordering and save it
+    ordering = TaskManager(order = request.POST["text"])
+    print ordering
+    ordering.save()
+
+    return HttpResponse("order saved")
 
 
 def get_tasks(request):
@@ -10,8 +24,16 @@ def get_tasks(request):
     # get tasks for user
     tasks = Task.objects.all()
 
-    #Prepares a JSON "message" to send back to the browser
+    # send back a json message of it
     json_data = serializers.serialize('json', tasks)
+    return HttpResponse (json_data, mimetype='application/json')
+
+def get_order(request):
+    # get task order
+    order = TaskManager.objects.filter(pk=1)
+
+    # send back a json message of it
+    json_data = serializers.serialize('json', order)
     return HttpResponse (json_data, mimetype='application/json')
 
 @csrf_exempt
@@ -26,7 +48,6 @@ def add_task(request):
     )
 
     task.save()
-
     return HttpResponse(task.id)
 
 
@@ -35,7 +56,6 @@ def remove_task(request):
 
     # get the id of the to_do we want to get rid of
     id_to_remove = request.POST["id"]
-    print id_to_remove
 
     # fetch that task and delete it
     task = Task.objects.get(id=id_to_remove)
