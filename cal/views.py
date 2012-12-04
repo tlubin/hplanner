@@ -8,7 +8,8 @@ import re
 
 def get_events(request):
     # get events for user
-    events = Event.objects.all()
+    user = request.user
+    events = user.event_set.all()
 
     # convert event data to JSON
     json_data = serializers.serialize('json', events)
@@ -17,6 +18,7 @@ def get_events(request):
 @csrf_exempt
 def add_event(request):
     # get new event data
+    user = request.user
     title = request.POST['title']
     start = strToDateTime(request.POST['start'])
     end = strToDateTime(request.POST['end'])
@@ -24,6 +26,7 @@ def add_event(request):
 
     # make new event and save
     event = Event(
+        user = user,
         title=title,
         start=start,
         end=end,
@@ -37,6 +40,7 @@ def add_event(request):
 @csrf_exempt
 def update_event(request):
     # get new event data
+    user = request.user
     id = request.POST['id']
     title = request.POST['title']
     start = strToDateTime(request.POST['start'])
@@ -44,7 +48,7 @@ def update_event(request):
     allDay = True if (request.POST['allDay'] == 'true') else False
 
     # get event to update
-    event = Event.objects.get(pk = id)
+    event = user.event_set.get(pk = id)
 
     # update elements and save
     event.title = title
@@ -58,11 +62,11 @@ def update_event(request):
 @csrf_exempt
 def remove_event(request):
     # get event id
+    user = request.user
     id = request.POST['id']
 
     # get event and delete
-    event = Event.objects.get(pk = id)
-    event.delete()
+    user.event_set.get(pk = id).delete()
 
     return HttpResponse("Okay")
 

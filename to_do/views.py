@@ -8,11 +8,11 @@ from django.utils import timezone
 def update_order(request):
 
     # clear the ordering
-    TaskManager.objects.all().delete()
-
+    user = request.user
+    user.taskmanager_set.all().delete()
 
     # make new ordering and save it
-    ordering = TaskManager(order = request.POST["text"])
+    ordering = TaskManager(user = user, order = request.POST["text"])
     print ordering
     ordering.save()
 
@@ -22,7 +22,8 @@ def update_order(request):
 def get_tasks(request):
 
     # get tasks for user
-    tasks = Task.objects.all()
+    user = request.user
+    tasks = user.task_set.all()
 
     # send back a json message of it
     json_data = serializers.serialize('json', tasks)
@@ -30,7 +31,8 @@ def get_tasks(request):
 
 def get_order(request):
     # get task order
-    order = TaskManager.objects.filter(pk=1)
+    user = request.user
+    order = user.taskmanager_set.all()
 
     # send back a json message of it
     json_data = serializers.serialize('json', order)
@@ -42,9 +44,8 @@ def add_task(request):
     # make new event and save
     task = Task(
         title=request.POST["title"],
+        user = request.user,
         # TODO set this up really time stuff
-        due_date= timezone.now()
-        # TODO include user id
     )
 
     task.save()
@@ -55,11 +56,11 @@ def add_task(request):
 def remove_task(request):
 
     # get the id of the to_do we want to get rid of
+    user = request.user
     id_to_remove = request.POST["id"]
 
     # fetch that task and delete it
-    task = Task.objects.get(id=id_to_remove)
-    task.delete()
+    user.task_set.get(id=id_to_remove).delete()
 
     return HttpResponse("task removed")
 

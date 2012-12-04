@@ -120,7 +120,6 @@ INSTALLED_APPS = (
     # 'django.contrib.admindocs',
     'cal',
     'to_do',
-    'accounts',
 )
 
 # A sample logging configuration. The only tangible logging
@@ -151,11 +150,5 @@ LOGGING = {
         },
     }
 }
-
-AUTHENTICATION_BACKENDS = (
-    'accounts.auth_backends.CustomUserModelBackend',
-    )
-
-CUSTOM_USER_MODEL = 'accounts.CustomUser'
 
 SESSION_COOKIE_HTTPONLY = False
