@@ -4,30 +4,38 @@
     {% load staticfiles %}
     <script type='text/javascript' src='http://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js'></script>
     <script type='text/javascript' src="{%  static 'js/login.js' %}"></script>
-
+    <link rel="stylesheet" href="{% static 'css/login.css' %}" type="text/css" />
 
 </head>
 <body style="text-align: center">
-<h1>
-    Simple Login Page
-</h1>
+<div id="logo">
+    <h1>
+        Harvard Planner
+    </h1>
+</div>
+<h2>
+Login if you have an account!
+</h2>
 <div id="login_fields">
-    Username<input id="userid" type="text"/>
+    <input id="userid" placeholder="Username" type="text"/>
     <br/>
-    Password<input id="pword" type="password"/>
+    <input id="pword" placeholder="Password" type="password"/>
     <br/>
     <input type="button" id="login_button" value="Login" />
 </div>
 <div id="login_message" style="color: #ff0000"></div>
 <div id="register_fields">
     <h2> Or Register (for free!) </h2>
-    Username<input id="new_id" type="text"/>
+    <input id="new_id" placeholder="Username" type="text"/>
     <br/>
-    Password<input id="new_pword" type="password"/>
+    <input id="new_pword" placeholder="password" type="password"/>
     <br/>
-    Confirm Password<input id="new_pword2" type="password"/>
+    <input id="new_pword2" placeholder="confirm password" type="password"/>
     <br/>
     <input type="button" id="register_button" value="Register" />
+</div>
+<div id="picture">
+    <img src="http://amilimani.com/wp-content/gallery/islamic-kingdom/united-states-of-america.jpg">
 </div>
 <div id="register_message" style="color: #ff0000"></div>
 

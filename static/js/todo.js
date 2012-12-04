@@ -65,10 +65,28 @@ function AppendItem( itemTitle, itemId) {
     // build checkbox
     var checkbox = "<input type='checkbox' id='checker' style='float: right'/>";
 
+    var cal = "<input type='checkbox' class='calButton'  style=' float: left; margin-right:10px; position:left;'/>";
+
     // build list item, add an id (which may be a placeholder, hide it
-    var $listItem = $("<li class='ui-state-default'> " + itemTitle + checkbox + "</li>");
+    var $listItem = $("<li class='ui-state-default'> " + itemTitle + checkbox + cal + "</li>");
     $listItem.attr('id', itemId);
     $listItem.hide();
+
+    $('.calButton').bind('click', function() {
+        if($(this).is(':checked'))
+        {
+            alert("hello")
+            $(this).parent().draggable({
+            zIndex: 999,
+            revert: true,      // will cause the event to go back to its
+            revertDuration: 0  //  original position after the drag
+            });
+        }
+        else
+            {
+                $(this).parent().draggable( "option", "disabled", true );
+            }
+    });
 
 //  remove the corresponding list item when remove is clicked, and update the TaskManager to store the new order
     $listItem.find("#checker").click( function() {
