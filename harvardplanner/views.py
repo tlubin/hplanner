@@ -1,6 +1,6 @@
 from django.shortcuts import render_to_response
 from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.models import User
+from accounts.models import CustomUser
 
 
 from django.http import HttpResponse, HttpResponseRedirect
@@ -23,6 +23,7 @@ def login_check(request):
     username = request.POST['username']
     pword = request.POST['password']
     user = authenticate(username=username, password=pword)
+    print user.color
     if user is not None:
         # log the user in to set the session id global
         login(request, user)

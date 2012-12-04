@@ -18,7 +18,8 @@ function initializeForm() {
     $( "ul#items" ).sortable({
         update: function( event, ui ) {
             UpdateOrder($(this).sortable('toArray'));
-        }
+        },
+        axis: 'y'
     }).disableSelection();
 
     // populate the to do list with all the tasks in the database
