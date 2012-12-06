@@ -6,6 +6,9 @@
  * Sets up the calendar and all the event handlers
  */
 
+// global for next_id for calendar events
+next_id = 1;
+
 $(document).ready(function() {
 
     // ajax request to get event data from server
@@ -16,6 +19,7 @@ $(document).ready(function() {
             dataType: "json",
             success: function (data)
             {
+                alert(data);
                 // convert JSON to array of Event objects
                 var user_events = JSONtoEVENTS(data);
 
@@ -55,7 +59,11 @@ function JSONtoEVENTS (json) {
         // required fields
         event["title"] = json_event["fields"]["title"];
         event["start"] = json_event["fields"]["start"];
-        event["id"] = json_event["pk"];
+        event["sid"] = json_event["pk"]; // server id
+        event["id"] = next_id;
+
+        // increment next_id
+        next_id++;
 
         // optional fields
         if (json_event["fields"]["allDay"])
@@ -63,9 +71,55 @@ function JSONtoEVENTS (json) {
         if (json_event["fields"]["end"])
             event["end"] = json_event["fields"]["end"];
 
-        // add event to array
-        events.push(event);
+        // check for repeating event
+        var model = json_event["model"];
+        if (model == "cal.event") {
+            event["type"] = "event";
+            events.push(event);
+        }
+        else if (model == "cal.repeatevent") {
+            event["type"] = "repeat";
+
+            // add "head" of repeat chain
+            events.push(event);
+
+            // add the rest of the repeated events
+            var repeats = repeat_event(event);
+            for (var key in repeats) {
+                events.push(repeats[key]);
+            }
+        }
     }
+    return events;
+}
+
+function repeat_event(event) {
+    var events = [];
+
+    // TODO: this is where we look at the rule and build accordingly
+
+    for (var i = 1; i < 20; i++) {
+
+        // container for new event
+        var new_event = {};
+
+        // get a copy of event
+        $.extend(new_event,event);
+
+        // give event a new id
+        new_event['id'] = next_id;
+        next_id++;
+
+        // update the date
+        var old_Date = $.fullCalendar.parseDate(new_event.start);
+        var new_Date = new Date(old_Date.getFullYear(), old_Date.getMonth(), old_Date.getDate()+7*i,
+                                old_Date.getHours(), old_Date.getMinutes());
+        new_event['start'] = new_Date.toString();
+
+        // add event to array
+        events.push(new_event);
+    }
+
     return events;
 }
 
@@ -108,11 +162,13 @@ function initializeCalendar(events) {
                         var new_title = $("#title").val();
                         if (new_title) {
                             var new_event = {
+                                id: next_id,
                                 title: new_title,
                                 start: start,
                                 end: end,
                                 allDay: allDay
                             };
+                            next_id++;
 
                             // TODO: this should be done cleaner by using the function already made
                             // add event to database
@@ -125,7 +181,7 @@ function initializeCalendar(events) {
                                     success: function (data) {
                                         alert(data);
                                         // set id of new event
-                                        new_event['id'] = parseInt(data);
+                                        new_event['sid'] = parseInt(data);
                                     }
                                 }
                             );
@@ -220,7 +276,6 @@ function initializeCalendar(events) {
 
         }
     });
-
 }
 
 /*
