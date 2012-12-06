@@ -114,10 +114,7 @@ function JSONtoTASKS(json)
             dataType: "json",
             success: function (data)
             {
-                if (data == [])
-                // get the order of elements as an array
-                // TODO FIX THIS LATER
-                if (true)
+                if (data.length != 0)
                 {
                     csv_order = data[0]["fields"]["order"];
                     order = csv_order.split(',');
