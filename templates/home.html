@@ -5,6 +5,7 @@
     {% load staticfiles %}
     <link rel="stylesheet" href="{% static 'css/reset.css' %}" type="text/css" />
     <link rel="stylesheet" href="{% static 'css/fullcalendar.css' %}" type="text/css" />
+    <link rel="stylesheet" href="{% static 'css/categories.css' %}" type="text/css" />
     <link rel="stylesheet" href="{% static 'css/main.css' %}" type="text/css" />
     <link rel='stylesheet' type='text/css' href='http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.2/themes/cupertino/jquery-ui.css' />
     <!-- static files for the todo_ -->
@@ -25,6 +26,7 @@
     <script type='text/javascript' src="{%  static 'js/main.js' %}"></script>
     <script type='text/javascript' src="{%  static 'js/todo.js' %}"></script>
     <script type='text/javascript' src="{%  static 'js/cal.js' %}"></script>
+    <script type='text/javascript' src="{%  static 'js/categories.js' %}"></script>
 
 
 </head>
@@ -34,12 +36,22 @@
     <button type="button" id="settings_button">Settings</button>
     <button type="button" id="logout_button" onclick="location.href='logout'"> Logout</button>
 </div>
+<div id="cat_div">
+    <h3>Add Category in Calendar</h3>
+    <form>
+        <input type="text" id="cat-input"/>
+        <a href="javascript: void(0)" id="add-cat">Add</a>
+    </form>
+    <br/>
+{#    what class?#}
+    <ul id="cats" class=""></ul>
+</div>
 <div id='calendar'></div>
 <div id="todo_div">
     <h3>Add Item To Do</h3>
     <form>
         <input type="text" id="todo_input"/>
-        <a href="javascript: void(0)" id="add-item">Add Item</a>
+        <a href="javascript: void(0)" id="add-item">Add</a>
     </form>
     <br/>
     <ul id="items" class="sortable"></ul>

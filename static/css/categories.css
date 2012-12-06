@@ -1,0 +1,3 @@
+form h3 { display: inline }
+a#add-cat { margin-left: .5em; color:black }
+a:hover#add-cat { color:green !important }

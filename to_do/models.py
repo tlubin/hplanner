@@ -5,7 +5,6 @@ from django.contrib.auth.models import User
 #each person is going to have a to_do
 #class to_do
 #TODO use ForeignKey to link events to a calendar
-#TODO blank = True isn't doing anything, maybe use NULL?
 
 # http://arshaw.com/fullcalendar/docs/event_data/Event_Object/
 class Task(models.Model):

@@ -20,4 +20,7 @@ urlpatterns = patterns('',
     # to_do urls
     url(r'^todo/', include('to_do.urls')),
 
+    # categories urls
+    url(r'^cat/', include('categories.urls')),
+
 )

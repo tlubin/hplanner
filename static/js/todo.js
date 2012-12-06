@@ -106,6 +106,7 @@ function LOADTASKS()
 
 function JSONtoTASKS(json)
 {
+    // make another http request to figure out the order in which we want to display the tasks, the do it
     $.ajax(
         {
             type:"GET",
@@ -113,18 +114,23 @@ function JSONtoTASKS(json)
             dataType: "json",
             success: function (data)
             {
+                if (data == [])
                 // get the order of elements as an array
-                csv_order = data[0]["fields"]["order"];
-                order = csv_order.split(',');
-
-                // for each element of the order array, pick out the task with that id and render it
-                for (var i = 0, n = order.length; i < n; i++)
+                // TODO FIX THIS LATER
+                if (true)
                 {
-                    for (index in json)
+                    csv_order = data[0]["fields"]["order"];
+                    order = csv_order.split(',');
+
+                    // for each element of the order array, pick out the task with that id and render it
+                    for (var i = 0, n = order.length; i < n; i++)
                     {
-                        task = json[index];
-                        if (task["pk"] == order[i])
-                            AppendItem(task["fields"]["title"], task["pk"]);
+                        for (index in json)
+                        {
+                            task = json[index];
+                            if (task["pk"] == order[i])
+                                AppendItem(task["fields"]["title"], task["pk"]);
+                        }
                     }
                 }
             }
@@ -134,10 +140,13 @@ function JSONtoTASKS(json)
 
 function ADDtoDATABASE($listItem)
 {
+    // package up the data to send to the server
     var item_to_send = {
         title: $listItem.text()
         // todo add a date
     };
+
+    // send it, modifying the list element according to how the database saves it
     $.ajax(
         {
             type: "POST",
@@ -158,7 +167,6 @@ function REMOVEfromDATABASE(id_to_delete)
 {
     var item_to_send = {
         id: id_to_delete
-        // todo add a date
     };
     $.ajax(
         {

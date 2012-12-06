@@ -120,6 +120,7 @@ INSTALLED_APPS = (
     # 'django.contrib.admindocs',
     'cal',
     'to_do',
+    'categories'
 )
 
 # A sample logging configuration. The only tangible logging

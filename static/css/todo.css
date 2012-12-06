@@ -4,7 +4,5 @@ ul.sortable li span { position: absolute; margin-left: -1.3em; margin-top: -1.2e
 ul.sortable li { background-color: #C0C0C0; }
 
 form h3 { display: inline }
-a#remove-all { margin-left: 7.7em; color:black; }
-a:hover#remove-all { color:#F68 !important }
 a#add-item { margin-left: .5em; color:black }
 a:hover#add-item { color:green !important }
