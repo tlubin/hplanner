@@ -1,12 +1,11 @@
 // magic number for how many times to repeat events
-MAXREPEAT = 2;
+MAXREPEAT = 10;
 
 // global for next_id for calendar events
 next_id = 1;
 
 
 $(document).ready(function() {
-
     // get events and repeats from the server; upon success, initializeCalendar
     getEvents();
 });
@@ -330,65 +329,81 @@ function initializeCalendar(events) {
                             }
                             // non-type change
                             else if(calEvent.title != titleField.val()) { // TODO! any change in anything
-                                // prompt user
-                                var $prompt_user = $("#repeat_prompt");
-                                $prompt_user.dialog({
-                                    title: "Edit Repeating Event:",
-                                    width: 400,
-                                    draggable: false,
-                                    resizable: false,
-                                    close: function() {
-                                        $prompt_user.dialog("destroy");
-                                        $prompt_user.hide();
-                                    },
-                                    buttons: {
-                                        "All Future Events": function() {
-                                            // update title
-                                            calEvent.title = titleField.val();
+                                // check whether event is last in chain
+                                if (lastRepeat(calEvent)) {
+                                    // get oldStart and oldEnd
+                                    var oldStart = calEvent.start;
+                                    var oldEnd = calEvent.end;
 
-                                            var oldStart = calEvent.start;
-                                            var oldEnd = calEvent.end;
+                                    // if oldEnd is null, assign it as oldStart
+                                    if (!oldEnd)
+                                        oldEnd = oldStart;
 
-                                            // TODO! get newStart, newEnd, allDay from fields
-                                            // TODO! this is where we give default values
-                                            // TODO! update calEvent and send these new values
+                                    // update title and time
+                                    calEvent.title = titleField.val();
+                                    // TODO! update the start and end times
 
-                                            // make sure newEnd is not null
-                                            if (!oldEnd)
-                                                oldEnd = oldStart;
-
-                                            edit_repeat(calEvent, oldStart, oldEnd);
-
-                                            // close dialog
-                                            $prompt_user.dialog("close");
-
+                                    edit_repeat(calEvent, oldStart, oldEnd);
+                                }
+                                else {
+                                    // prompt user
+                                    var $prompt_user = $("#repeat_prompt");
+                                    $prompt_user.dialog({
+                                        title: "Edit Repeating Event:",
+                                        width: 400,
+                                        draggable: false,
+                                        resizable: false,
+                                        close: function() {
+                                            $prompt_user.dialog("destroy");
+                                            $prompt_user.hide();
                                         },
-                                        "This Event Only": function() {
-                                            // update title
-                                            calEvent.title = titleField.val();
-                                            // TODO! update the start and end times
+                                        buttons: {
+                                            "All Future Events": function() {
+                                                // update title
+                                                calEvent.title = titleField.val();
 
-                                            break_repeat(calEvent);
+                                                var oldStart = calEvent.start;
+                                                var oldEnd = calEvent.end;
 
-                                            // add event as new event
-                                            var new_event = {
-                                                id: next_id,
-                                                type: 'event',
-                                                start: calEvent.start,
-                                                end: calEvent.end,
-                                                title: titleField.val(),
-                                                allDay: calEvent.allDay
-                                            };
-                                            next_id++;
-                                            add_event(new_event);
+                                                // TODO! get newStart, newEnd, allDay from fields
+                                                // TODO! this is where we give default values
+                                                // TODO! update calEvent and send these new values
 
-                                            // close dialog
-                                            $prompt_user.dialog("close");
+                                                // make sure newEnd is not null
+                                                if (!oldEnd)
+                                                    oldEnd = oldStart;
+
+                                                edit_repeat(calEvent, oldStart, oldEnd);
+
+                                                // close dialog
+                                                $prompt_user.dialog("close");
+
+                                            },
+                                            "This Event Only": function() {
+                                                // update title
+                                                calEvent.title = titleField.val();
+                                                // TODO! update the start and end times
+
+                                                break_repeat(calEvent);
+
+                                                // add event as new event
+                                                var new_event = {
+                                                    id: next_id,
+                                                    type: 'event',
+                                                    start: calEvent.start,
+                                                    end: calEvent.end,
+                                                    title: titleField.val(),
+                                                    allDay: calEvent.allDay
+                                                };
+                                                next_id++;
+                                                add_event(new_event);
+
+                                                // close dialog
+                                                $prompt_user.dialog("close");
+                                            }
                                         }
-                                    }
-                                }).show();
-
-
+                                    }).show();
+                                }
                             }
 
                         }
@@ -451,57 +466,71 @@ function initializeCalendar(events) {
             }
             // repeat
             else if (event.type == 'repeat') {
-                var $prompt_user = $("#repeat_prompt");
-                $prompt_user.dialog({
-                    title: "Edit Repeating Event:",
-                    width: 400,
-                    draggable: false,
-                    resizable: false,
-                    close: function() {
-                        $prompt_user.dialog("destroy");
-                        $prompt_user.hide();
-                    },
-                    buttons: {
-                        "All Future Events": function() {
-                            // get oldStart and oldEnd
-                            var newStart = event.start;
-                            var newEnd = event.end;
-                            if (!newEnd)
-                                newEnd = newStart;
-                            var oldStart = dateChange(newStart, -1 * dayDelta, -1 * minuteDelta);
-                            var oldEnd = dateChange(newEnd, -1 * dayDelta, -1 * minuteDelta);
+                // check whether event is last in chain
+                if (lastRepeat(event)) {
+                    // get oldStart and oldEnd
+                    var newStart = event.start;
+                    var newEnd = event.end;
+                    if (!newEnd)
+                        newEnd = newStart;
+                    var oldStart = dateChange(newStart, -1 * dayDelta, -1 * minuteDelta);
+                    var oldEnd = dateChange(newEnd, -1 * dayDelta, -1 * minuteDelta);
 
-                            edit_repeat(event, oldStart, oldEnd);
+                    edit_repeat(event, oldStart, oldEnd);
 
-                            // close dialog
-                            $prompt_user.dialog("close");
+                }
+                else {
+                    var $prompt_user = $("#repeat_prompt");
+                    $prompt_user.dialog({
+                        title: "Edit Repeating Event:",
+                        width: 400,
+                        draggable: false,
+                        resizable: false,
+                        close: function() {
+                            $prompt_user.dialog("destroy");
+                            $prompt_user.hide();
                         },
-                        "This Event Only": function() {
-                            // new event that will be added
-                            var new_event = {
-                                id: next_id,
-                                type: 'event',
-                                start: event.start,
-                                end: event.end,
-                                title: event.title,
-                                allDay: allDay
-                            };
-                            next_id++;
+                        buttons: {
+                            "All Future Events": function() {
+                                // get oldStart and oldEnd
+                                var newStart = event.start;
+                                var newEnd = event.end;
+                                if (!newEnd)
+                                    newEnd = newStart;
+                                var oldStart = dateChange(newStart, -1 * dayDelta, -1 * minuteDelta);
+                                var oldEnd = dateChange(newEnd, -1 * dayDelta, -1 * minuteDelta);
 
-                            // create a break but change start date to old start date so the break is at the right date
-                            var oldStart = dateChange(event.start, -1 * dayDelta, minuteDelta);
-                            event.start = oldStart;
-                            break_repeat(event);
+                                edit_repeat(event, oldStart, oldEnd);
 
-                            // add new event
-                            add_event(new_event);
+                                // close dialog
+                                $prompt_user.dialog("close");
+                            },
+                            "This Event Only": function() {
+                                // new event that will be added
+                                var new_event = {
+                                    id: next_id,
+                                    type: 'event',
+                                    start: event.start,
+                                    end: event.end,
+                                    title: event.title,
+                                    allDay: allDay
+                                };
+                                next_id++;
 
-                            // close dialog
-                            $prompt_user.dialog("close");
+                                // create a break but change start date to old start date so the break is at the right date
+                                var oldStart = dateChange(event.start, -1 * dayDelta, minuteDelta);
+                                event.start = oldStart;
+                                break_repeat(event);
+
+                                // add new event
+                                add_event(new_event);
+
+                                // close dialog
+                                $prompt_user.dialog("close");
+                            }
                         }
-                    }
-                }).show();
-
+                    }).show();
+                }
             }
 
         },
@@ -515,61 +544,74 @@ function initializeCalendar(events) {
             }
             // repeat
             else if (event.type == 'repeat') {
-                var $prompt_user = $("#repeat_prompt");
-                $prompt_user.dialog({
-                    title: "Edit Repeating Event:",
-                    width: 400,
-                    draggable: false,
-                    resizable: false,
-                    close: function() {
-                        $prompt_user.dialog("destroy");
-                        $prompt_user.hide();
-                    },
-                    buttons: {
-                        "All Future Events": function() {
-                            // get newStart and newEnd
-                            var oldStart = event.start;
-                            var oldEnd = event.end;
-                            if (!oldEnd)
-                                oldEnd = oldStart;
-                            var newStart = dateChange(oldStart, dayDelta, minuteDelta);
-                            var newEnd = dateChange(oldEnd, dayDelta, minuteDelta);
+                // check whether event is last in chain
+                if (lastRepeat(event)) {
+                    // get newStart and newEnd
+                    var oldStart = event.start;
+                    var oldEnd = event.end;
+                    if (!oldEnd)
+                        oldEnd = oldStart;
+                    var newStart = dateChange(oldStart, dayDelta, minuteDelta);
+                    var newEnd = dateChange(oldEnd, dayDelta, minuteDelta);
 
-                            edit_repeat(event, newStart, newEnd, allDay);
-
-                            // close dialog
-                            $prompt_user.dialog("close");
+                    edit_repeat(event, newStart, newEnd, allDay);
+                }
+                else {
+                    var $prompt_user = $("#repeat_prompt");
+                    $prompt_user.dialog({
+                        title: "Edit Repeating Event:",
+                        width: 400,
+                        draggable: false,
+                        resizable: false,
+                        close: function() {
+                            $prompt_user.dialog("destroy");
+                            $prompt_user.hide();
                         },
-                        "This Event Only": function() {
-                            // create a break
-                            break_repeat(event);
+                        buttons: {
+                            "All Future Events": function() {
+                                // get newStart and newEnd
+                                var oldStart = event.start;
+                                var oldEnd = event.end;
+                                if (!oldEnd)
+                                    oldEnd = oldStart;
+                                var newStart = dateChange(oldStart, dayDelta, minuteDelta);
+                                var newEnd = dateChange(oldEnd, dayDelta, minuteDelta);
 
-                            // calculate start and end date of new event to add
-                            var oldStart = event.start;
-                            var oldEnd = event.end;
-                            if (!oldEnd)
-                                oldEnd = oldStart;
-                            var newStart = dateChange(oldStart, dayDelta, minuteDelta);
-                            var newEnd = dateChange(oldEnd, dayDelta, minuteDelta);
+                                edit_repeat(event, newStart, newEnd, allDay);
 
-                            // add event as new event
-                            var new_event = {
-                                id: next_id,
-                                type: 'event',
-                                start: newStart,
-                                end: newEnd,
-                                title: event.title,
-                                allDay: allDay
-                            };
-                            next_id++;
-                            add_event(new_event);
+                                // close dialog
+                                $prompt_user.dialog("close");
+                            },
+                            "This Event Only": function() {
+                                // create a break
+                                break_repeat(event);
 
-                            // close dialog
-                            $prompt_user.dialog("close");
+                                // calculate start and end date of new event to add
+                                var oldStart = event.start;
+                                var oldEnd = event.end;
+                                if (!oldEnd)
+                                    oldEnd = oldStart;
+                                var newStart = dateChange(oldStart, dayDelta, minuteDelta);
+                                var newEnd = dateChange(oldEnd, dayDelta, minuteDelta);
+
+                                // add event as new event
+                                var new_event = {
+                                    id: next_id,
+                                    type: 'event',
+                                    start: newStart,
+                                    end: newEnd,
+                                    title: event.title,
+                                    allDay: allDay
+                                };
+                                next_id++;
+                                add_event(new_event);
+
+                                // close dialog
+                                $prompt_user.dialog("close");
+                            }
                         }
-                    }
-                }).show();
-
+                    }).show();
+                }
             }
         },
         droppable: true, // this allows things to be dropped onto the calendar !!!
@@ -712,58 +754,68 @@ function edit_event(event) {
 // with the new types
 // event is the NEW event with new title and new start time, end time, allDay
 function edit_repeat(event, oldStart, oldEnd) {
+
+    // check to see if only the head is left in the repeatevent chain
+    var events_behind = calendar.fullCalendar('clientEvents', function(e) {
+        return (e.type == 'repeat' && e.sid == event.sid && e.start < oldStart && e.id != event.id);
+    });
+    console.log(events_behind);
+    if (events_behind.length == 1) {
+        // only the head is left, turn this into an event object
+        var head = events_behind[0];
+        head.type = 'event';
+    }
+
     //  get each event with the same sid as this, and with a current or future date from the oldStart
     // this doesn't include the passed in event
     var events_to_change = calendar.fullCalendar('clientEvents', function(e) {
         return (e.type == event.type && e.sid == event.sid && e.start > oldStart && e.id != event.id);
     });
 
-    // calculate change in start and end times
-    var dayDeltaStart = Math.ceil((event.start.getTime()-oldStart.getTime())/(one_day));
-    var minuteDeltaStart = (event.start.getHours() - oldStart.getHours())*60 +
-                           (event.start.getMinutes() - oldStart.getMinutes());
-    console.log((event.start.getTime()-oldStart.getTime())/(one_day));
-
-    // if event has no end, give it the start
-    if (!event.end) {
-        event.end = event.start;
+    // if editing the last in the chain
+    if (events_to_change.length == 0) {
+        // simply change type to 'event'
+        event.type = 'event';
     }
-    var dayDeltaEnd = Math.ceil((event.end.getTime()-oldEnd.getTime())/(one_day));
-    var minuteDeltaEnd = (event.end.getHours() - oldEnd.getHours())*60 +
-        (event.end.getMinutes() - oldEnd.getMinutes());
+    // move all future events by the deltas
+    else {
+        // calculate change in start and end times
+        var dayDeltaStart = getDayDelta(oldStart, event.start);
+        var minuteDeltaStart = (event.start.getHours() - oldStart.getHours())*60 +
+                               (event.start.getMinutes() - oldStart.getMinutes());
 
-    // move each start and end by dayDelta and minuteDelta, update title, set allDay
-    for (var index in events_to_change) {
-        // event to change
-        var event_to_change = events_to_change[index];
-
-        // set allDay
-        event_to_change.allDay = event.allDay;
-
-        // set title
-        event_to_change.title = event.title;
-
-        // set end date
-        var ds = event_to_change.start;
-        var de = event_to_change.end;
-        // if event_to_change has no end, give it the start
-        if (!de) {
-            de = ds;
+        // if event has no end, give it the start
+        if (!event.end) {
+            event.end = dateChange(event.start, 0, 120);
         }
+        var dayDeltaEnd = getDayDelta(oldEnd, event.end);
+        var minuteDeltaEnd = (event.end.getHours() - oldEnd.getHours())*60 +
+            (event.end.getMinutes() - oldEnd.getMinutes());
 
-        // change start and end dates
-        event_to_change.start = dateChange(ds, dayDeltaStart, minuteDeltaStart);
-        event_to_change.end = dateChange(de, dayDeltaEnd, minuteDeltaEnd);
-    }
+        // move each start and end by dayDelta and minuteDelta, update title, set allDay
+        for (var index in events_to_change) {
+            // event to change
+            var event_to_change = events_to_change[index];
 
-    // check to see if only the head is left in the repeatevent chain
-    var events_behind = calendar.fullCalendar('clientEvents', function(e) {
-        return (e.type == 'repeat' && e.sid == event.sid && e.start < event.start);
-    });
-    if (events_behind.length == 1) {
-        // only the head is left, turn this into an event object
-        var head = events_behind[0];
-        head.type = 'event';
+            // set allDay
+            event_to_change.allDay = event.allDay;
+
+            // set title
+            event_to_change.title = event.title;
+
+            // set end date
+            var ds = event_to_change.start;
+            var de = event_to_change.end;
+
+            // if event_to_change has no end, give it the start plus 2 hours
+            if (!de) {
+                de = dateChange(ds, 0, 120);
+            }
+
+            // change start and end dates
+            event_to_change.start = dateChange(ds, dayDeltaStart, minuteDeltaStart);
+            event_to_change.end = dateChange(de, dayDeltaEnd, minuteDeltaEnd);
+        }
     }
 
     // render calendar
@@ -775,7 +827,6 @@ function edit_repeat(event, oldStart, oldEnd) {
 
     // add fields for oldStart and oldEnd
     event_to_send['oldStart'] = oldStart;
-    event_to_send['oldEnd'] = oldEnd;
 
     // update database and get back new sid for new repeatevent chain
     $.ajax(
@@ -792,19 +843,25 @@ function edit_repeat(event, oldStart, oldEnd) {
                     // update sid of the head
                     head.sid = parseInt(ids[0]);
 
-                    // update sid of event and events_to_change
+                    // update sid of event
                     event.sid = parseInt(ids[1]);
 
-                    for (var key in events_to_change) {
-                        events_to_change[key].sid = parseInt(ids[1]);
+                    // update sids of events_to_change if there are any
+                    if (events_to_change.length == 0) {
+                        for (var key in events_to_change) {
+                            events_to_change[key].sid = parseInt(ids[1]);
+                        }
                     }
                 }
                 else {
                     // only update sid of event and events_to_change
                     event.sid = parseInt(data);
 
-                    for (var key in events_to_change) {
-                        events_to_change[key].sid = parseInt(data);
+                    // update sids of events_to_change if there are any
+                    if (events_to_change.length == 0) {
+                        for (var key in events_to_change) {
+                            events_to_change[key].sid = parseInt(ids[1]);
+                        }
                     }
                 }
             }
@@ -829,7 +886,7 @@ function break_repeat(event) {
 // that were part of previous repeat event into events
 function free_repeat(event) {
     // get all events that were part of previous repeat event
-    var events = calendar.fullCalendar('clientEvents', function(e) {
+    var priors = calendar.fullCalendar('clientEvents', function(e) {
         return (e.type == 'repeat' && e.sid == event.sid && e.start < event.start);
     });
 
@@ -846,20 +903,20 @@ function free_repeat(event) {
                 sids = data.split(',');
 
                 // TODO!!! make this work blehhh
-                for (var index in events)
+                for (var index in priors)
                 {
                     // change type
-                    events[index].type = 'event';
+                    priors[index].type = 'event';
 
                     // update allDay
-                    events[index].allDay = event.allDay;
+                    priors[index].allDay = event.allDay;
 
                     // give event an id
-                    events[index].id = next_id;
+                    priors[index].id = next_id;
                     next_id++;
 
                     // give event a sid
-                    events[index].sid = parseInt(sids[index]);
+                    priors[index].sid = parseInt(sids[index]);
                 }
             }
         }
@@ -888,6 +945,16 @@ function makePOST(url, event) {
     );
 }
 
+// checks whether the edited event object is the last in the repeat event chain
+function lastRepeat(event) {
+    // check to see if this is the last event in the repeat chain
+    var events_ahead = calendar.fullCalendar('clientEvents', function(e) {
+        return (e.type == 'repeat' && e.sid == event.sid && e.start > event.start);
+    });
+
+    return (events_ahead == 0);
+}
+
 // function takes in an oldDate along with dayDelta and minuteDelta
 // and returns a new Date with the changes applied
 function dateChange(oldDate, dayDelta, minuteDelta) {
@@ -899,12 +966,12 @@ function dateChange(oldDate, dayDelta, minuteDelta) {
     return newDate;
 }
 
-//
-function getDayDelta(dateStart, dateEnd) {
+// calculates and returns the integer difference in days between two dates (end - start)
+function getDayDelta(start, end) {
     //Get 1 day in milliseconds
     var one_day=1000*60*60*24;
 
     // return the day difference
-    return Math.ceil((s.getTime() - 60*60*1000*s.getHours() - 60*1000*s.getMinutes() -
-        (t.getTime() - 60*60*1000*t.getHours() - 60*1000*t.getMinutes()))/(one_day));
+    return Math.ceil((end.getTime() - 60 * 60 * 1000 * end.getHours() - 60 * 1000 * end.getMinutes() -
+        (start.getTime() - 60 * 60 * 1000 * start.getHours() - 60 * 1000 * start.getMinutes()))/(one_day));
 }

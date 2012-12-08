@@ -93,7 +93,9 @@ def delete_event(request):
 # ------------------------------------------------------------------------
 # Has the effect of deleting the current and future events from a RepeatEvent
 # chain. In the database it simply adds an end date on the RepeatEvent unless
-# the end date is the head, in which case it deletes the RepeatEvent
+# the end date is the head, in which case it deletes the RepeatEvent. Also
+# handles the case when there is only one event left behind, converting this
+# to an Event object and sending the id as the result
 # ------------------------------------------------------------------------
 @csrf_exempt
 def delete_repeat(request):
@@ -112,8 +114,9 @@ def delete_repeat(request):
     if date == repeat.start:
         # delete RepeatEvent
         repeat.delete()
+
     # check if you are one past the head
-    elif oneBack(date, 'rrule') == repeat.start:
+    elif oneBack(date, repeat) == repeat.start:
         # make the head into a new Event object
         event = Event(
             user = user,
@@ -123,19 +126,22 @@ def delete_repeat(request):
             allDay=repeat.allDay
         )
         event.save()
+
+        # save id to return
         idreturn = str(event.id)
 
         # delete RepeatEvent
         repeat.delete()
-    # otherwise
+
+    # not head and not one past head
     else:
         # set end date to one instance back of the passed in date
-        end = oneBack(date, 'ruleHere')
+        end = oneBack(date, repeat)
         # update repeat and save
         repeat.endRepeat = end
         repeat.save()
 
-    # return id of new event that was made at the head
+    # return id or ''
     return HttpResponse(idreturn)
 
 
@@ -169,21 +175,25 @@ def edit_event(request):
 
 # ------------------------------------------------------------------------
 # Called when a RepeatEvent is edited and applied to all future events.
-# Must be given event_orig and event_new for the event that was edited.
-# Add an end date on the RepeatEvent object based on the event_orig date.
-# Then create a new RepeatEvent object based on the event_new date.
+# Must be given the new event information along with the old start date.
+# Takes care of appropriately updating the old repeat event and making a new
+# repeat event while handling corner cases of last in chain and leaving only head.
+# Return ids of all instances that are created.
 # ------------------------------------------------------------------------
 @csrf_exempt
 def edit_repeat(request):
+    # get passed in data
     user = request.user
     id = request.POST['sid']
     oldStart = strToDateTime(request.POST['oldStart'])
     newStart = strToDateTime(request.POST['start'])
     newEnd = strToDateTime(request.POST['end'])
+    type = request.POST['type']
 
     # get old RepeatEvent object
     repeat = user.repeatevent_set.get(pk = id)
     breaks = repeat.breaks.all()
+    oldEndRepeat = repeat.endRepeat
 
     # get break events to move to new repeatevent
     breaks_new = []
@@ -191,7 +201,7 @@ def edit_repeat(request):
         if br.date > oldStart:
             # remove from old repeat
             repeat.breaks.remove(br)
-            # save to breaks_new array
+            # add to breaks_new array
             breaks_new.append(br)
 
     # container to hold httpresponse of ids
@@ -199,11 +209,12 @@ def edit_repeat(request):
 
     # check whether oldStart is the head
     if oldStart == repeat.start:
-        # delete RepeatEvent
+        # delete old RepeatEvent
         repeat.delete()
+
     # check if you are one past the head
-    elif oneBack(oldStart, 'rrule') == repeat.start:
-        # make the head into a new Event object
+    elif oneBack(oldStart, repeat) == repeat.start:
+        # make the head of the old RepeatEvent into a new Event object
         event = Event(
             user = user,
             title=repeat.title,
@@ -212,39 +223,61 @@ def edit_repeat(request):
             allDay=repeat.allDay
         )
         event.save()
+
         # add id to container
         ids = str(event.id) + ','
-        # delete RepeatEvent
+
+        # delete old RepeatEvent
         repeat.delete()
+
     # otherwise
     else:
-        # set end date to one instance back of the passed in date
-        end = oneBack(oldStart,'rrule')
-        # update repeat and save
+        # set end date of old RepeatEvent to one instance back of the passed in date
+        end = oneBack(oldStart,repeat)
+        # update old RepeatEvent and save
         repeat.endRepeat = end
         repeat.save()
 
-    # create new RepeatEvent object based on new datetimes
-    new_repeat = RepeatEvent(
-        user = user,
-        title=request.POST['title'],
-        start=newStart,
-        end=newEnd,
-        allDay=request.POST['allDay']
-    )
-    new_repeat.save()
 
-    # add id to container
-    ids += str(new_repeat.id)
+    # create new Event object if you moved the last in the chain
+    if type == 'event':
+        tail = Event(
+            user = user,
+            title=request.POST['title'],
+            start=newStart,
+            end=newEnd,
+            allDay=request.POST['allDay']
+        )
+        tail.save()
 
-    # move breaks to new chain by delta
-    delta = newStart - oldStart
-    for br in breaks_new:
-        br.date += delta
-        br.save()
-        new_repeat.breaks.add(br)
+        # add id to container
+        ids += str(tail.id)
 
-    # '3' OR '1,3' where first number is the event id for the head and second is id of new RepeatEvent
+    # create new RepeatEvent object otherwise
+    else:
+        new_repeat = RepeatEvent(
+            user = user,
+            title=request.POST['title'],
+            start=newStart,
+            end=newEnd,
+            allDay=request.POST['allDay']
+        )
+        new_repeat.save()
+
+        # add id to container
+        ids += str(new_repeat.id)
+
+        # move breaks and endRepeat to new chain by delta
+        delta = newStart - oldStart
+        for br in breaks_new:
+            br.date += delta
+            br.save()
+            new_repeat.breaks.add(br)
+        if (oldEndRepeat):
+            new_repeat.endRepeat = oldEndRepeat + delta
+            new_repeat.save()
+
+    # '3' OR '1,3' where first number is the event id for the head and second is id of new RepeatEvent / Event (if last moved is tail)
     return HttpResponse(ids)
 
 
@@ -277,7 +310,7 @@ def break_repeat(request):
 # ------------------------------------------------------------------------
 @csrf_exempt
 def free_repeat(request):
-    # get information
+    # get passed in data
     user = request.user
     event_start = strToDateTime(request.POST['start']) # last date to free (starting from head)
     event_end = strToDateTime(request.POST['end'])
@@ -289,7 +322,7 @@ def free_repeat(request):
     if event_end:
         event_length = event_end - event_start
 
-    # get the RepeatEvent object
+    # get the old RepeatEvent object
     repeat = user.repeatevent_set.all().get(pk = id)
     head = repeat.start
 
@@ -298,7 +331,7 @@ def free_repeat(request):
     for _break in repeat.breaks.all():
         breaks.append(_break.date)
 
-    # delete the RepeatEvent object
+    # delete the old RepeatEvent object
     repeat.delete()
 
     # TODO! get rrule from repeat object
@@ -319,9 +352,12 @@ def free_repeat(request):
             end=cursor,
             allDay=allDay
         )
+
         # add length of event if it exists
         if event_end:
             event.end += event_length
+
+        # save the event
         event.save()
 
         # add id to ids csv string
@@ -355,10 +391,26 @@ def strToDateTime(string):
 
 # ------------------------------------------------------------------------
 # Functions that take in a DateTime object and return a DateTime object of
-# the next or previous date according to a given repeat rule string
+# the next or previous date according to a given RepeatEvent object's breaks
+# or rrule
 # ------------------------------------------------------------------------
-def oneBack(date, rrule):
-    return date - datetime.timedelta(days=7)
+def oneBack(date, repeat):
+    breaks = list(repeat.breaks.all())
+    breakdates = []
+    for _break in breaks:
+        breakdates.append(_break.date)
+
+    # rrule = repeat.rrule
+
+    # get first date back that isn't a break
+    previous = date - datetime.timedelta(days=7) # based on rrule
+    while (previous in breakdates):
+        previous = previous - datetime.timedelta(days=7)
+
+    return previous
 
 def oneForward(date, rrule):
+    # return the next date according to the repeat rule
+    # doesn't have to deal with breaks because of the way it is
+    # implemented when oneForward is called
     return date + datetime.timedelta(days=7)
