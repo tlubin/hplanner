@@ -16,6 +16,14 @@ class Event(models.Model):
     def __unicode__(self):
         return u'%s %s' % (self.user, self.title)
 
+class BreakEvent(models.Model):
+    date = models.DateTimeField()
+    def __unicode__(self):
+        return u'%s' % (self.date)
+    def natural_key(self):
+        return (self.date)
+
+
 class RepeatEvent(models.Model):
     # repeatrule = models.CharField(max_length = 50)
     # TODO: implement repeat rules
@@ -24,13 +32,8 @@ class RepeatEvent(models.Model):
     allDay = models.NullBooleanField()
     start = models.DateTimeField()
     end = models.DateTimeField(null = True)
+    endRepeat = models.DateTimeField(null = True)
+    breaks = models.ManyToManyField(BreakEvent)
     def __unicode__(self):
         return u'%s %s' % (self.user, self.title)
-
-
-class BreakEvent(models.Model):
-    date = models.DateTimeField()
-    headEvent = models.ForeignKey(RepeatEvent)
-    def __unicode__(self):
-        return u'%s %s' % (self.date, self.headEvent.title)
 
