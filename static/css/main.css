@@ -45,4 +45,18 @@ p {
     width: 20%;
     float: right;
     margin: 15px;
+
+}
+#end_div
+{
+ float: right;
+ margin-top: 1px;
+}
+#event_end
+{
+    margin-left: 5px;
+}
+#event_start
+{
+    margin-left: 5px;
 }

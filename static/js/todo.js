@@ -63,16 +63,25 @@ function addItem() {
 
 function AppendItem( itemTitle, itemId) {
     // build checkbox
-    var checkbox = "<input type='checkbox' id='checker' style='float: right'/>";
+    var checkbox = "<input type='button' value=' X ' id='checker' style='float: right'/>";
 
+    var showcal = "<img src ='http://amilimani.com/wp-content/gallery/islamic-kingdom/united-states-of-america.jpg' width='36px;' height='24px;' class='calCheck' style='float: left;' />";
     var cal = "<input type='checkbox' class='calButton'  style=' float: left; margin-right:10px; position:left;'/>";
 
     // build list item, add an id (which may be a placeholder, hide it
-    var $listItem = $("<li class='ui-state-default'> " + itemTitle + checkbox + cal + "</li>");
+    var $listItem = $("<li class='ui-state-default'> " + itemTitle + checkbox + cal + showcal + "</li>");
     $listItem.attr('id', itemId);
     $listItem.hide();
+    $listItem.find(".calButton").hide();
 
-    $('.calButton').bind('click', function() {
+    $listItem.find(".calCheck").bind('mousedown', function() {
+       $listItem.find(".calButton").show();
+    });
+    $listItem.find(".calCheck").bind('doubleclick', function() {
+        $listItem.find(".calButton").hide();
+    });
+
+    $listItem.find(".calButton").bind('click', function() {
         if($(this).is(':checked'))
         {
             alert("hello")

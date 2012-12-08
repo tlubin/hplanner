@@ -145,6 +145,9 @@ function initializeCalendar(events) {
         },
         eventClick: function(calEvent, jsEvent, view) {
             var $dialogContent = $("#event_edit_container");
+
+
+
             var titleField = $dialogContent.find("input[id='title']").val(calEvent.title);
             $dialogContent.dialog({
                 title: "Edit - " + calEvent.title,
@@ -170,7 +173,7 @@ function initializeCalendar(events) {
                         $dialogContent.dialog("close");
 
                     },
-                    delete : function() {
+                                        delete : function() {
                         // delete event from database
                         makePOST('cal/remove_event', calEvent);
 
