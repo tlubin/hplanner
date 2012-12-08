@@ -35,15 +35,8 @@ p {
     display: none;
 }
 
-#cat_div {
-    width: 15%;
-    float: left;
-    margin: 10px;
-}
-
-
 #calendar {
-    width: 55%;
+    width: 75%;
     float: left;
     margin: 10px;
 }
@@ -51,5 +44,19 @@ p {
 #todo_div {
     width: 20%;
     float: right;
-    margin: 10px;
+    margin: 15px;
+
+}
+#repeat_datepicker
+{
+    float: right;
+    margin-top: 1px;
+}
+#end_hour
+{
+    margin-left: 5px;
+}
+#start_hour
+{
+    margin-left: 5px;
 }

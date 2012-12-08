@@ -200,9 +200,11 @@ function initializeCalendar(events) {
 
         // select (when you click / click and drag the calendar) brings up a dialog for creating a new event
         select: function(start, end, allDay) {
+            // clear the form
             clearEventForm();
 
-            // TODO prepopulate with the time, if this has come from dragging on the calendar
+            // populate the form
+            drag_prepopulate(start, end, allDay);
 
             var $dialogContent = $("#event_edit_container");
             $dialogContent.dialog({
@@ -217,9 +219,7 @@ function initializeCalendar(events) {
                 buttons: {
                     save : function() {
 
-                        // save the inputted values. TODO: these should include date-time.
-                        var new_title = $("#title").val();
-                        var repeat = $("#repeat_check").is(':checked');
+                        // save the inputted values.
                         if (new_title) {
                             var new_event = {
                                 id: next_id,
@@ -259,14 +259,18 @@ function initializeCalendar(events) {
         eventClick: function(calEvent, jsEvent, view) {
             console.log(calEvent);
 
+            // clear the form
+            clearEventForm();
+
+            // populate the form
+            click_prepopulate(calEvent);
+
             // save the various fields from the dialog as variables
             var $dialogContent = $("#event_edit_container");
-            var titleField = $dialogContent.find("input[id='title']").val(calEvent.title);
-            var repeatBox = $("#repeat_check");
-            // TODO: add time as one of these
+            var titleField = $dialogContent.find("input[id='title']");
+            var repeatBox = ($("#rrule").val() == '');
+            // TODO: add fields that we need
 
-            // setup checkbox according to event type
-            (calEvent.type == 'repeat') ? repeatBox.attr('checked', true) : repeatBox.attr('checked', false);
             $dialogContent.dialog({
                 title: "Edit - " + calEvent.title,
                 width: 400,
@@ -281,7 +285,7 @@ function initializeCalendar(events) {
                         // event
                         if (calEvent.type == 'event') {
                             // type change to RepeatEvent
-                            if (repeatBox.is(':checked')) {
+                            if (repeatBox) {
                                 // delete the event
                                 delete_event(calEvent);
 
@@ -309,7 +313,7 @@ function initializeCalendar(events) {
                         // repeat
                         else if (calEvent.type == 'repeat') {
                             // type change to Event
-                            if (!repeatBox.is(':checked')) {
+                            if (!repeatBox) {
                                 // update title
                                 calEvent.title = titleField.val();
 
@@ -644,13 +648,23 @@ function initializeCalendar(events) {
 
 // clears the event creation / editing form
 function clearEventForm() {
-    $('#title').val('');
-    $('#repeat_check').attr('checked', false);
-    // TODO clear other fields once they exist, namely the date
+    $("#title").val("");
+    $("#start_datepicker").val("");
+    $("#start_hour").val("");
+    $("#start_min").val("");
+    $("#start_ampm").val("AM");
+    $("#end_datepicker").val("");
+    $("#end_hour").val("");
+    $("#end_min").val("");
+    $("#end_ampm").val("AM");
+    $("#allDay").attr('checked', false);
+    $("#repeat_rule").val("");
+    $("#repeat_datepicker").val("");
 }
 
 // adds a non-repeating event to the database, renders the calendar
 function add_event(new_event){
+    console.log(new_event);
     calendar.fullCalendar('renderEvent', new_event, true);
     $.ajax(
         {
@@ -974,4 +988,130 @@ function getDayDelta(start, end) {
     // return the day difference
     return Math.ceil((end.getTime() - 60 * 60 * 1000 * end.getHours() - 60 * 1000 * end.getMinutes() -
         (start.getTime() - 60 * 60 * 1000 * start.getHours() - 60 * 1000 * start.getMinutes()))/(one_day));
+}
+
+// Convert a user's input (a slash_date, like 12/12/2012, and a time of day)
+function toDatetime(slash_date, hr, min, ampm)
+{
+
+    var day_date = slash_date.split("/");
+    hr = hr % 12;
+    hr = (ampm == "AM") ? hr : hr + 12;
+
+
+    var date_time = new Date(
+        year = day_date[2],
+        month = day_date[0] - 1,
+        day = day_date[1],
+        hour = hr,
+        minute = min
+    );
+    return date_time;
+}
+
+//Convert from a datetime value to an array of stuff that can preopulate the edit event container
+function fromDatetime(datetime)
+{
+    var year = datetime.getFullYear();
+    var month = datetime.getMonth() + 1;
+    var day = datetime.getDate();
+    year.toString();
+    month.toString();
+    day.toString();
+    var slash_date = month+'/'+day+'/'+year;
+
+    var hour = datetime.getHours();
+    var ampm = (hour < 12) ? "AM" : "PM";
+    hour = (ampm == "AM") ? hour : hour - 12;
+    hour = (hour == 0) ? 12 : hour;
+    hour.toString();
+    var minutes = datetime.getMinutes();
+    minutes = (minutes >= 10) ? minutes : '0'+minutes;
+    minutes.toString();
+
+    return [slash_date, hour, minutes, ampm]
+}
+
+// when someone clicks/drags on the calendar to make an event, populate the edit event container with their input
+function drag_prepopulate(start, end, allDay)
+{
+    var start_array = fromDatetime(start);
+
+    $("#start_datepicker").val(start_array[0]);
+    $("#start_hour").val( start_array[1]);
+    $("#start_min").val(start_array[2]);
+    $("#start_ampm").val(start_array[3]);
+
+    if (end)
+    {
+        var end_array = fromDatetime(end);
+        $("#end_datepicker").val(end_array[0]);
+        $("#end_hour").val(end_array[1]);
+        $("#end_min").val(end_array[2]);
+        $("#end_ampm").val(end_array[3]);
+    }
+
+    if (allDay)
+        $("#allDay").attr('checked', true);
+}
+
+// prepopulate the edit event box when someone clicks on an event to edit it
+function click_prepopulate(calEvent)
+{
+    $("#title").val(calEvent.title);
+    // TODO: prepopulate the repeat rule and repeat end date
+//    $("#rrule").val(calEvent.rrule);
+//    $("#repeat_datepicker").val(calEvent.end_repeat OR SOMETHING LIKE THAT);
+
+    drag_prepopulate(calEvent.start, calEvent.end, calEvent.allDay);
+}
+
+// creates an event object from the edit event form
+// returns null on no title inputted
+function inputToEvent() {
+
+    // get title
+    var title = $("#title").val();
+
+    // make sure title exists
+    if (!title)
+        return null;
+
+    // get start
+    var start = toDatetime( $("#start_datepicker").val(), parseInt($("#start_hour").val()), parseInt($("#start_min").val()), $("#start_ampm").val());
+
+    // get end
+    var end = toDatetime( $("#end_datepicker").val(), parseInt($("#end_hour").val()), parseInt($("#end_min").val()), $("#end_ampm").val());
+
+    // get allDay
+    var allDay = $("#allDay").is(':checked');
+
+    // get rrule
+    var rrule = $("#repeat_rule").val();
+
+    // get endRepeat if there is an rrule
+    if (rrule)
+        var endRepeat = $("#repeat_datepicker").val();
+
+    // give type based on whether rrule exists
+    var type = rrule ? 'repeat' : 'event';
+
+    /* handle the cases of stupid users */
+
+
+
+
+
+    // create the event
+    event = {
+        title: title,
+        start: start,
+        end: end,
+        allDay: allDay,
+        type: type,
+        id: next_id
+    };
+    next_id++;
+
+
 }

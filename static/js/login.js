@@ -18,13 +18,13 @@ $(document).ready(function() {
     });
 
     // Handle enter key pressed
-    $("#login_fields input").keypress(function(e) {
+    $(".login_fields input").keypress(function(e) {
         if(e.which == 13) {
             e.preventDefault();
             login();
         }
     });
-    $("#register_fields input").keypress(function(e) {
+    $(".register_fields input").keypress(function(e) {
         if(e.which == 13) {
             e.preventDefault();
             register();
