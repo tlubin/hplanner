@@ -28,6 +28,7 @@ def get_events(request):
 # ------------------------------------------------------------------------
 @csrf_exempt
 def add_event(request):
+    print request.POST
     # get new event data
     user = request.user
     title = request.POST['title']

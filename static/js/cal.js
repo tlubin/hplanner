@@ -219,24 +219,12 @@ function initializeCalendar(events) {
                 buttons: {
                     save : function() {
 
-                        // save the inputted values.
-                        if (new_title) {
-                            var new_event = {
-                                id: next_id,
-                                title: new_title,
-                                start: start,
-                                end: end,
-                                allDay: allDay,
-                                type: "event"
-                            };
-                            // update type if necessary
-                            if (repeat)
-                                new_event['type'] = "repeat";
-                            next_id++;
+                        // make event from field
+                        var new_event = inputToEvent(start);
+                        if (new_event) {
 
                             // Depending on which type of event we have here, enter it into the database with one of 2 functions
                             // These functions also set the sid's and render
-//                            console.log(new_event.end);
                             if (new_event['type'] == "event")
                                 add_event(new_event);
 
@@ -664,7 +652,6 @@ function clearEventForm() {
 
 // adds a non-repeating event to the database, renders the calendar
 function add_event(new_event){
-    console.log(new_event);
     calendar.fullCalendar('renderEvent', new_event, true);
     $.ajax(
         {
@@ -728,7 +715,7 @@ function delete_repeat(event) {
 
     // check to see if only the head is left in the repeatevent chain
     var events_behind = calendar.fullCalendar('clientEvents', function(e) {
-       return (e.type == 'repeat' && e.sid == event.sid && e.start < event.start);
+        return (e.type == 'repeat' && e.sid == event.sid && e.start < event.start);
     });
     if (events_behind.length == 1) {
         // only the head is left, turn this into an event object
@@ -796,7 +783,7 @@ function edit_repeat(event, oldStart, oldEnd) {
         // calculate change in start and end times
         var dayDeltaStart = getDayDelta(oldStart, event.start);
         var minuteDeltaStart = (event.start.getHours() - oldStart.getHours())*60 +
-                               (event.start.getMinutes() - oldStart.getMinutes());
+            (event.start.getMinutes() - oldStart.getMinutes());
 
         // if event has no end, give it the start
         if (!event.end) {
@@ -1012,13 +999,7 @@ function toDatetime(slash_date, hr, min, ampm)
 //Convert from a datetime value to an array of stuff that can preopulate the edit event container
 function fromDatetime(datetime)
 {
-    var year = datetime.getFullYear();
-    var month = datetime.getMonth() + 1;
-    var day = datetime.getDate();
-    year.toString();
-    month.toString();
-    day.toString();
-    var slash_date = month+'/'+day+'/'+year;
+    var slash_date = DatetimetoSlashdate(datetime)
 
     var hour = datetime.getHours();
     var ampm = (hour < 12) ? "AM" : "PM";
@@ -1066,9 +1047,9 @@ function click_prepopulate(calEvent)
     drag_prepopulate(calEvent.start, calEvent.end, calEvent.allDay);
 }
 
-// creates an event object from the edit event form
+// creates an event object from the edit event form, even when user does dumb things
 // returns null on no title inputted
-function inputToEvent() {
+function inputToEvent(start) {
 
     // get title
     var title = $("#title").val();
@@ -1077,41 +1058,102 @@ function inputToEvent() {
     if (!title)
         return null;
 
-    // get start
-    var start = toDatetime( $("#start_datepicker").val(), parseInt($("#start_hour").val()), parseInt($("#start_min").val()), $("#start_ampm").val());
-
-    // get end
-    var end = toDatetime( $("#end_datepicker").val(), parseInt($("#end_hour").val()), parseInt($("#end_min").val()), $("#end_ampm").val());
-
     // get allDay
     var allDay = $("#allDay").is(':checked');
 
     // get rrule
     var rrule = $("#repeat_rule").val();
 
-    // get endRepeat if there is an rrule
-    if (rrule)
-        var endRepeat = $("#repeat_datepicker").val();
-
     // give type based on whether rrule exists
-    var type = rrule ? 'repeat' : 'event';
+    var type = (rrule) ? 'repeat' : 'event';
 
-    /* handle the cases of stupid users */
+    // get endRepeat if there is an rrule
+    var endRepeat = $("#repeat_datepicker").val();
 
 
 
+    // get start time data
+    var start_date = $("#start_datepicker").val();
+    var start_hour = parseInt($("#start_hour").val());
+    var start_min = parseInt($("#start_min").val());
+    var start_ampm = $("#start_ampm").val();
+
+    // get end time data
+    var end_date = $("#end_datepicker").val();
+    var end_hour = parseInt($("#end_hour").val());
+    var end_min = parseInt($("#end_min").val());
+    var end_ampm = $("#end_ampm").val();
+
+
+    // check the start and end inputs, set to certain defaults if the user was dumb
+
+    // if they don't give a start date, make it the original start date
+    if (! start_date)
+        start_date = DatetimetoSlashdate(start);
+    // if all we have is a start date and minutes, make the event at midnightt
+    if (! start_hour) {
+        start_hour = 12;
+        start_min = 0;
+        start_ampm = "AM";
+    }
+    // if we have a start hour but no minutes, give zero minutes
+    else if (start_hour)
+        start_min = 0;
+
+    // same business for end inputs
+    if (! end_date)
+        end_date = DatetimetoSlashdate(end);
+    if (! end_hour) {
+        end_hour = 12;
+        end_min = 0;
+        end_ampm = "AM";
+    }
+    else if (end_hour)
+        end_min = 0;
+
+    // Now we can finally convert these to actual datetimes
+    // get start
+    var start_datetime = toDatetime( start_date, start_hour, start_min, start_ampm);
+
+    // get end
+    var end_datetime = toDatetime( end_date, end_hour, end_min, end_ampm);
+
+
+    // handle the cases where the end is before the start
+    if (end_datetime < start_datetime)
+    {
+        end_datetime = dateChange(start_datetime, 120);
+    }
+    // if start and end time are the same, let's say it's implied that we have an allDay event
+    if (end_datetime == start_datetime)
+        allDay = true;
 
 
     // create the event
-    event = {
+    var event = {
         title: title,
-        start: start,
-        end: end,
+        start: start_datetime,
+        end: end_datetime,
         allDay: allDay,
         type: type,
-        id: next_id
+        id: next_id,
+        rrule: rrule,
+        endRepeat: endRepeat
     };
     next_id++;
 
+    return event;
+}
 
+function DatetimetoSlashdate(datetime)
+{
+    var year = datetime.getFullYear();
+    var month = datetime.getMonth() + 1;
+    var day = datetime.getDate();
+    year.toString();
+    month.toString();
+    day.toString();
+    var slash_date = month+'/'+day+'/'+year;
+
+    return slash_date;
 }
