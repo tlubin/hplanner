@@ -13,11 +13,11 @@ function configureEndRepeat() {
     $("#end_repeat").hide();
 
     //
-    $('#repeat_rule').bind('change', function(){
-        var val = $('#repeat_rule').val();
+    $('#rrule').bind('change', function(){
+        var val = $('#rrule').val();
 
         // if repeat rule is not 'None'
-        if (val)
+        if (val != '0')
             $('#end_repeat').show();
 
         // repeat rule changed to 'None'
@@ -31,7 +31,7 @@ function configureTimeInputs() {
     $('.hour_filter').each(function() {
         // highlight on click
         $(this).click( function() {
-            $(this).select();
+            $(this).val('');
         });
 
         // filter input to only numbers
@@ -57,7 +57,7 @@ function configureTimeInputs() {
     $('.min_filter').each(function() {
         // highlight on click
         $(this).click( function() {
-            $(this).select();
+            $(this).val('');
         });
 
         // filter input to only numbers

@@ -61,6 +61,10 @@ def add_repeat(request):
     start = strToDateTime(request.POST['start'])
     end = strToDateTime(request.POST['end'])
     allDay = True if (request.POST['allDay'] == 'true') else False
+    rrule = int(request.POST['rrule'])
+    endRepeat = strToDateTime(request.POST['endRepeat'])
+    print request.POST['endRepeat']
+    print endRepeat
 
     # make new RepeatEvent and save
     event = RepeatEvent(
@@ -68,7 +72,9 @@ def add_repeat(request):
         title=title,
         start=start,
         end=end,
-        allDay=allDay
+        allDay=allDay,
+        endRepeat = endRepeat,
+        rrule = rrule
     )
     event.save()
 
@@ -105,6 +111,9 @@ def delete_repeat(request):
     id = request.POST['sid']
     date = strToDateTime(request.POST['start'])
 
+    # get type to deal with case of free repeat on second to last
+    type = request.POST['type']
+
     # container for httpresponse
     idreturn = ''
 
@@ -112,7 +121,8 @@ def delete_repeat(request):
     repeat = user.repeatevent_set.get(pk = id)
 
     # check whether date is at the head
-    if date == repeat.start:
+    # special case of type change on the second from the head of repeat event (type is event)
+    if date == repeat.start or type == 'event':
         # delete RepeatEvent
         repeat.delete()
 
@@ -133,7 +143,6 @@ def delete_repeat(request):
 
         # delete RepeatEvent
         repeat.delete()
-
     # not head and not one past head
     else:
         # set end date to one instance back of the passed in date
@@ -190,6 +199,11 @@ def edit_repeat(request):
     newStart = strToDateTime(request.POST['start'])
     newEnd = strToDateTime(request.POST['end'])
     type = request.POST['type']
+    endRepeat = request.POST['endRepeat']
+
+    # handle datatype conversions
+    if endRepeat == 'null':
+        endRepeat = None
 
     # get old RepeatEvent object
     repeat = user.repeatevent_set.get(pk = id)
@@ -240,7 +254,8 @@ def edit_repeat(request):
         repeat.save()
 
 
-    # create new Event object if you moved the last in the chain
+    # create new Event object if you edited the last in the chain
+    # could be editing last in chain and making it a new rrule
     if type == 'event':
         tail = Event(
             user = user,
@@ -261,7 +276,9 @@ def edit_repeat(request):
             title=request.POST['title'],
             start=newStart,
             end=newEnd,
-            allDay=request.POST['allDay']
+            allDay=request.POST['allDay'],
+            rrule = int(request.POST['rrule']),
+            endRepeat = endRepeat
         )
         new_repeat.save()
 
@@ -318,6 +335,7 @@ def free_repeat(request):
     id = request.POST['sid']
     title = request.POST['title']
     allDay = True if (request.POST['allDay'] == 'true') else False
+    rrule = int(request.POST['rrule'])
 
     # calculate the event length if an end exists
     if event_end:
@@ -326,6 +344,7 @@ def free_repeat(request):
     # get the old RepeatEvent object
     repeat = user.repeatevent_set.all().get(pk = id)
     head = repeat.start
+    rruleOld = repeat.rrule;
 
     # format the breaks array
     breaks = []
@@ -334,8 +353,6 @@ def free_repeat(request):
 
     # delete the old RepeatEvent object
     repeat.delete()
-
-    # TODO! get rrule from repeat object
 
     # loop from head to event_start, making new Event objects
     cursor = head
@@ -365,7 +382,7 @@ def free_repeat(request):
         ids += str(event.id) + ','
 
         # move cursor
-        cursor = oneForward(cursor, 'rrule')
+        cursor = oneForward(cursor, rruleOld)
 
     # remove last comma
     ids = ids[:-1]
@@ -401,12 +418,12 @@ def oneBack(date, repeat):
     for _break in breaks:
         breakdates.append(_break.date)
 
-    # rrule = repeat.rrule
+    rrule = repeat.rrule
 
     # get first date back that isn't a break
-    previous = date - datetime.timedelta(days=7) # based on rrule
+    previous = date - datetime.timedelta(days=rrule) # based on rrule
     while (previous in breakdates):
-        previous = previous - datetime.timedelta(days=7)
+        previous = previous - datetime.timedelta(days=rrule)
 
     return previous
 
@@ -414,4 +431,4 @@ def oneForward(date, rrule):
     # return the next date according to the repeat rule
     # doesn't have to deal with breaks because of the way it is
     # implemented when oneForward is called
-    return date + datetime.timedelta(days=7)
+    return date + datetime.timedelta(days=rrule)

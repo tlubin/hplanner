@@ -110,7 +110,7 @@
         <input type="hidden" />
         <ul>
             <li>
-                <label for="title">Title:</label><input id="title"  type="text" size="37" maxlength="37"/><br/>
+                <label for="title">Title:</label><input id="title"  type="text" size="37" maxlength="37" autocomplete="off"/><br/>
                 {#                <label for="share">Share with: </label>#}
                 {#                <select id="share"></select>#}
                 <label for="start_datepicker">Start:</label><input id="start_datepicker" type="text" size="11" maxlength="10"/>
@@ -128,9 +128,9 @@
                     <option value="PM">PM</option>
                 </select> <br/>
                 <label for="allDay"> All Day? </label><input id="allDay" type="checkbox">
-                <label for="repeat_rule">Repeat:</label>
-                <select id="repeat_rule">
-                    <option value ="">none</option>
+                <label for="rrule">Repeat:</label>
+                <select id="rrule">
+                    <option value ="0">none</option>
                     <option value ="1">daily</option>
                     <option value="7">weekly</option>
                     <option value="14">biweekly</option>

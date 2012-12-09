@@ -1,5 +1,5 @@
 // magic number for how many times to repeat events
-MAXREPEAT = 10;
+MAXREPEAT = 60;
 
 // global for next_id for calendar events
 next_id = 1;
@@ -54,6 +54,8 @@ function JSONtoEVENTS (json) {
          "allDay": null,
          "end": null,
          "title": "Event title"
+         "rrule": "Repeat rule" ("0", "1", "7", or "14")
+         "endRepeat": "2012-11-27T01:41:20.229" OR ""
          } */
         var json_event = json[index];
 
@@ -81,13 +83,16 @@ function JSONtoEVENTS (json) {
         }
         else if (model == "cal.repeatevent") {
             event["type"] = "repeat";
+            event["rrule"] = parseInt(json_event["fields"]["rrule"]);
+            event["endRepeat"] = json_event["fields"]["endRepeat"];
+
 
             // get information about the repeat
-            var repeat_until = json_event['fields']['endRepeat']; // null on no end repeat date
+            var endRepeat = json_event['fields']['endRepeat']; // null on no end repeat date
             var breaks = json_event['fields']['breaks']; // array of break dates
 
             // add the repeating events as distinct events
-            var repeats = repeat_event(event, repeat_until, breaks);
+            var repeats = repeat_event(event, endRepeat, breaks);
             for (var key in repeats)
                 events.push(repeats[key]);
         }
@@ -104,12 +109,15 @@ function JSONtoEVENTS (json) {
 function repeat_event(event, repeat_until, breaks) {
     var events = [];
 
-    // TODO: this is where we look at the rule and build accordingly
+    // get rrule from event
+    var rrule = event.rrule;
 
-    // get old start/end datetimes, repeat_until, break
-    var old_start = $.fullCalendar.parseDate(event.start);
-    var old_end = $.fullCalendar.parseDate(event.end);
-    var endDate = $.fullCalendar.parseDate(repeat_until);
+    // get head start/end datetimes, repeat_until, break
+    var head_start = $.fullCalendar.parseDate(event.start);
+    var head_end = $.fullCalendar.parseDate(event.end);
+    var endRepeat = $.fullCalendar.parseDate(repeat_until);
+
+    // convert breaks into array of DateTimes
     for (var key in breaks) {
         breaks[key] = $.fullCalendar.parseDate(breaks[key]);
     }
@@ -123,10 +131,10 @@ function repeat_event(event, repeat_until, breaks) {
         $.extend(new_event,event);
 
         // update the start date
-        var new_start = new Date(old_start.getFullYear(), old_start.getMonth(), old_start.getDate()+7*i,
-            old_start.getHours(), old_start.getMinutes());
+        var new_start = new Date(head_start.getFullYear(), head_start.getMonth(), head_start.getDate()+rrule*i,
+            head_start.getHours(), head_start.getMinutes());
 
-//        check whether this date is a break, if so then continue TODO! check for empty breaks first to save time?
+        // check whether this date is a break, if so then continue
         var to_continue = false;
         if (breaks) {
             for (var key in breaks) {
@@ -142,11 +150,10 @@ function repeat_event(event, repeat_until, breaks) {
             continue;
 
         // check whether you are past the end, if so then break
-        if (endDate) {
-//            console.log(new_start);
-//            console.log(endDate);
-//            console.log(new_start > endDate);
-            if (new_start > endDate)
+        if (endRepeat) {
+            // strip new_start of its hours and minutes to compare to endRepeat
+            var new_start_stripped = new Date(new_start.getFullYear(), new_start.getMonth(), new_start.getDate());
+            if (new_start_stripped > endRepeat)
                 break;
         }
 
@@ -154,9 +161,9 @@ function repeat_event(event, repeat_until, breaks) {
         new_event['start'] = new_start.toString();
 
         // update the end date if it exists
-        if (old_end) {
-            var new_end = new Date(old_end.getFullYear(), old_end.getMonth(), old_end.getDate()+7*i,
-                old_end.getHours(), old_end.getMinutes());
+        if (head_end) {
+            var new_end = new Date(head_end.getFullYear(), head_end.getMonth(), head_end.getDate()+rrule*i,
+                head_end.getHours(), head_end.getMinutes());
             new_event['end'] = new_end.toString();
         }
 
@@ -206,6 +213,7 @@ function initializeCalendar(events) {
             // populate the form
             drag_prepopulate(start, end, allDay);
 
+            // open the event edit dialog
             var $dialogContent = $("#event_edit_container");
             $dialogContent.dialog({
                 title: "New Event:",
@@ -235,9 +243,6 @@ function initializeCalendar(events) {
                             calendar.fullCalendar('unselect');
                             $dialogContent.dialog("close");
                         }
-                    },
-                    cancel : function() {
-                        $dialogContent.dialog("close");
                     }
                 }
             }).show();
@@ -253,12 +258,8 @@ function initializeCalendar(events) {
             // populate the form
             click_prepopulate(calEvent);
 
-            // save the various fields from the dialog as variables
+            // open the event edit dialog
             var $dialogContent = $("#event_edit_container");
-            var titleField = $dialogContent.find("input[id='title']");
-            var repeatBox = ($("#rrule").val() == '');
-            // TODO: add fields that we need
-
             $dialogContent.dialog({
                 title: "Edit - " + calEvent.title,
                 width: 400,
@@ -270,10 +271,13 @@ function initializeCalendar(events) {
                 },
                 buttons: {
                     save : function() {
-                        // event
+                        // get new data from the input fields
+                        var data = getUserInput(calEvent.start);
+
+                        // event to begin with
                         if (calEvent.type == 'event') {
                             // type change to RepeatEvent
-                            if (repeatBox) {
+                            if (data.type == 'repeat') {
                                 // delete the event
                                 delete_event(calEvent);
 
@@ -281,18 +285,23 @@ function initializeCalendar(events) {
                                 var repeat_event = {
                                     id: next_id,
                                     type: 'repeat',
-                                    start: calEvent.start,
-                                    end: calEvent.end,
-                                    title: titleField.val(),
-                                    allDay: calEvent.allDay
+                                    start: data.start,
+                                    end: data.end,
+                                    title: data.title,
+                                    allDay: data.allDay,
+                                    rrule: data.rrule,
+                                    endRepeat: data.endRepeat
                                 };
                                 next_id++;
                                 add_repeat(repeat_event);
                             }
                             // non-type change
-                            else if (calEvent.title != titleField.val()) { // TODO! any change in anything
-                                // update title
-                                calEvent.title = titleField.val();
+                            else if (detectChange(calEvent, data)) {
+                                // update all the fields
+                                calEvent.title = data.title;
+                                calEvent.start = data.start;
+                                calEvent.end = data.end;
+                                calEvent.allDay = data.allDay;
 
                                 // edit event
                                 edit_event(calEvent);
@@ -301,9 +310,12 @@ function initializeCalendar(events) {
                         // repeat
                         else if (calEvent.type == 'repeat') {
                             // type change to Event
-                            if (!repeatBox) {
-                                // update title
-                                calEvent.title = titleField.val();
+                            if (data.type == 'event') {
+                                // update all the fields
+                                calEvent.title = data.title;
+                                calEvent.start = data.start;
+                                calEvent.end = data.end;
+                                calEvent.allDay = data.allDay;
 
                                 // change event type
                                 calEvent.type = 'event';
@@ -320,22 +332,44 @@ function initializeCalendar(events) {
 
                             }
                             // non-type change
-                            else if(calEvent.title != titleField.val()) { // TODO! any change in anything
-                                // check whether event is last in chain
-                                if (lastRepeat(calEvent)) {
-                                    // get oldStart and oldEnd
+                            else if(detectChange(calEvent, data)) {
+                                // check whether event is last in chain or the repeat rule is changed
+                                if (lastRepeat(calEvent, calEvent.start) || calEvent.rrule != data.rrule) {
+                                    // get oldStart and oldEnd, oldrrule
                                     var oldStart = calEvent.start;
                                     var oldEnd = calEvent.end;
+                                    var oldrrule = calEvent.rrule;
+                                    var oldEndRepeat = calEvent.endRepeat;
 
                                     // if oldEnd is null, assign it as oldStart
                                     if (!oldEnd)
                                         oldEnd = oldStart;
 
-                                    // update title and time
-                                    calEvent.title = titleField.val();
-                                    // TODO! update the start and end times
+                                    // update all fields
+                                    calEvent.title = data.title;
+                                    calEvent.start = data.start;
+                                    calEvent.end = data.end;
+                                    calEvent.allDay = data.allDay;
+                                    calEvent.endRepeat = data.endRepeat;
+                                    calEvent.rrule = data.rrule;
 
-                                    edit_repeat(calEvent, oldStart, oldEnd);
+                                    edit_repeat(calEvent, oldStart, oldEnd, oldrrule);
+                                }
+                                else if (calEvent.endRepeat != data.endRepeat) {
+                                    // get old endRepeat
+                                    oldEndRepeat = calEvent.endRepeat;
+
+                                    // update all the fields
+                                    calEvent.title = data.title;
+                                    calEvent.start = data.start;
+                                    calEvent.end = data.end;
+                                    calEvent.allDay = data.allDay;
+                                    calEvent.endRepeat = data.endRepeat;
+
+
+                                    // change the endRepeat
+                                    change_endrepeat(calEvent, oldEndRepeat);
+
                                 }
                                 else {
                                     // prompt user
@@ -351,15 +385,16 @@ function initializeCalendar(events) {
                                         },
                                         buttons: {
                                             "All Future Events": function() {
-                                                // update title
-                                                calEvent.title = titleField.val();
-
+                                                // keep track of old times
                                                 var oldStart = calEvent.start;
                                                 var oldEnd = calEvent.end;
 
-                                                // TODO! get newStart, newEnd, allDay from fields
-                                                // TODO! this is where we give default values
-                                                // TODO! update calEvent and send these new values
+                                                // update fields
+                                                calEvent.title = data.title;
+                                                calEvent.start = data.start;
+                                                calEvent.end = data.end;
+                                                calEvent.allDay = data.allDay;
+                                                calEvent.endRepeat = data.endRepeat;
 
                                                 // make sure newEnd is not null
                                                 if (!oldEnd)
@@ -372,20 +407,17 @@ function initializeCalendar(events) {
 
                                             },
                                             "This Event Only": function() {
-                                                // update title
-                                                calEvent.title = titleField.val();
-                                                // TODO! update the start and end times
-
+                                                // break_repeat on the old event date
                                                 break_repeat(calEvent);
 
                                                 // add event as new event
                                                 var new_event = {
                                                     id: next_id,
                                                     type: 'event',
-                                                    start: calEvent.start,
-                                                    end: calEvent.end,
-                                                    title: titleField.val(),
-                                                    allDay: calEvent.allDay
+                                                    start: data.start,
+                                                    end: data.end,
+                                                    title: data.title,
+                                                    allDay: data.allDay
                                                 };
                                                 next_id++;
                                                 add_event(new_event);
@@ -441,9 +473,6 @@ function initializeCalendar(events) {
                                 }
                             }).show();
                         }
-                    },
-                    cancel : function() {
-                        $dialogContent.dialog("close");
                     }
                 }
             }).show();
@@ -459,7 +488,7 @@ function initializeCalendar(events) {
             // repeat
             else if (event.type == 'repeat') {
                 // check whether event is last in chain
-                if (lastRepeat(event)) {
+                if (lastRepeat(event, dateChange(event.start, -1 * dayDelta, -1 * minuteDelta))) {
                     // get oldStart and oldEnd
                     var newStart = event.start;
                     var newEnd = event.end;
@@ -529,9 +558,6 @@ function initializeCalendar(events) {
         eventResize: function( event, dayDelta, minuteDelta, revertFunc, jsEvent, ui, view ) {
             // event
             if (event.type == 'event') {
-//                console.log(event);
-//                console.log(minuteDelta);
-//                console.log(dayDelta);
                 edit_event(event);
             }
             // repeat
@@ -646,8 +672,9 @@ function clearEventForm() {
     $("#end_min").val("");
     $("#end_ampm").val("AM");
     $("#allDay").attr('checked', false);
-    $("#repeat_rule").val("");
-    $("#repeat_datepicker").val("");
+    $("#rrule").val("0");
+    $("#end_repeat").hide();
+    $("repeat_datepicker").val('')
 }
 
 // adds a non-repeating event to the database, renders the calendar
@@ -669,12 +696,11 @@ function add_event(new_event){
 
 // adds a repeating event to the database, renders the calendar
 function add_repeat(new_event) {
-    var new_events = repeat_event(new_event);
-    console.log(new_events);
+    var new_events = repeat_event(new_event, new_event.endRepeat);
     for (var index in new_events)
     {
         // data gives back the sid
-        calendar.fullCalendar('renderEvent', new_events[index], true); // TODO! this is super slow
+        calendar.fullCalendar('renderEvent', new_events[index], true);
     }
 
     // POST to database, store returning sid to each event
@@ -754,7 +780,7 @@ function edit_event(event) {
 // ends the repeat event at the date of oldStart and starts a new repeat event
 // with the new types
 // event is the NEW event with new title and new start time, end time, allDay
-function edit_repeat(event, oldStart, oldEnd) {
+function edit_repeat(event, oldStart, oldEnd, oldrrule) {
 
     // check to see if only the head is left in the repeatevent chain
     var events_behind = calendar.fullCalendar('clientEvents', function(e) {
@@ -773,58 +799,98 @@ function edit_repeat(event, oldStart, oldEnd) {
         return (e.type == event.type && e.sid == event.sid && e.start > oldStart && e.id != event.id);
     });
 
-    // if editing the last in the chain
-    if (events_to_change.length == 0) {
-        // simply change type to 'event'
-        event.type = 'event';
+    // handle if the rrule changed
+    if (event.rrule != oldrrule) {
+        // delete the events_to_change and rebuild the events with the new rrule
+        for (var index in events_to_change)
+            calendar.fullCalendar('removeEvents', events_to_change[index].id);
+
+        // remove the current event
+        calendar.fullCalendar('removeEvents', event.id);
+
+        // make copy of event
+        var event_copy = {
+            title: event.title,
+            start: event.start,
+            end: event.end,
+            allDay: event.allDay,
+            rrule: event.rrule,
+            endRepeat: event.endRepeat,
+            id: next_id,
+            sid: event.sid,
+            type: 'repeat'
+        };
+        next_id++;
+
+        // repeat the event with the new rrule
+        var events_to_change = repeat_event(event_copy, event_copy.endRepeat, null);
+
+        // render the new repeat events
+        for (var key in events_to_change) {
+            // render the event
+            calendar.fullCalendar('renderEvent', events_to_change[key], true);
+        }
+
+        // make new event object to send along with old object
+        var event_to_send = {};
+        $.extend(event_to_send, event_copy);
+
     }
-    // move all future events by the deltas
     else {
-        // calculate change in start and end times
-        var dayDeltaStart = getDayDelta(oldStart, event.start);
-        var minuteDeltaStart = (event.start.getHours() - oldStart.getHours())*60 +
-            (event.start.getMinutes() - oldStart.getMinutes());
-
-        // if event has no end, give it the start
-        if (!event.end) {
-            event.end = dateChange(event.start, 0, 120);
+        // if editing the last in the chain and the end date comes before the would be next event, given the old
+        // or, if changed, new, rrule
+        if (events_to_change.length == 0) {
+            // simply change type to 'event'
+            event.type = 'event';
         }
-        var dayDeltaEnd = getDayDelta(oldEnd, event.end);
-        var minuteDeltaEnd = (event.end.getHours() - oldEnd.getHours())*60 +
-            (event.end.getMinutes() - oldEnd.getMinutes());
+        // move all future events by the deltas
+        else {
+            // calculate change in start and end times
+            var dayDeltaStart = getDayDelta(oldStart, event.start);
+            var minuteDeltaStart = (event.start.getHours() - oldStart.getHours())*60 +
+                (event.start.getMinutes() - oldStart.getMinutes());
 
-        // move each start and end by dayDelta and minuteDelta, update title, set allDay
-        for (var index in events_to_change) {
-            // event to change
-            var event_to_change = events_to_change[index];
-
-            // set allDay
-            event_to_change.allDay = event.allDay;
-
-            // set title
-            event_to_change.title = event.title;
-
-            // set end date
-            var ds = event_to_change.start;
-            var de = event_to_change.end;
-
-            // if event_to_change has no end, give it the start plus 2 hours
-            if (!de) {
-                de = dateChange(ds, 0, 120);
+            // if event has no end, give it the start
+            if (!event.end) {
+                event.end = dateChange(event.start, 0, 120);
             }
+            var dayDeltaEnd = getDayDelta(oldEnd, event.end);
+            var minuteDeltaEnd = (event.end.getHours() - oldEnd.getHours())*60 +
+                (event.end.getMinutes() - oldEnd.getMinutes());
 
-            // change start and end dates
-            event_to_change.start = dateChange(ds, dayDeltaStart, minuteDeltaStart);
-            event_to_change.end = dateChange(de, dayDeltaEnd, minuteDeltaEnd);
+            // move each start and end by dayDelta and minuteDelta, update title, set allDay
+            for (var index in events_to_change) {
+                // event to change
+                var event_to_change = events_to_change[index];
+
+                // set allDay
+                event_to_change.allDay = event.allDay;
+
+                // set title
+                event_to_change.title = event.title;
+
+                // set end date
+                var ds = event_to_change.start;
+                var de = event_to_change.end;
+
+                // if event_to_change has no end, give it the start plus 2 hours
+                if (!de) {
+                    de = dateChange(ds, 0, 120);
+                }
+
+                // change start and end dates
+                event_to_change.start = dateChange(ds, dayDeltaStart, minuteDeltaStart);
+                event_to_change.end = dateChange(de, dayDeltaEnd, minuteDeltaEnd);
+            }
         }
+
+        // make new event object to send along with old object
+        var event_to_send = {};
+        $.extend(event_to_send, event);
     }
 
     // render calendar
     calendar.fullCalendar("render");
-
-    // make new event object to send along with old object
-    var event_to_send = {};
-    $.extend(event_to_send, event);
 
     // add fields for oldStart and oldEnd
     event_to_send['oldStart'] = oldStart;
@@ -848,7 +914,7 @@ function edit_repeat(event, oldStart, oldEnd) {
                     event.sid = parseInt(ids[1]);
 
                     // update sids of events_to_change if there are any
-                    if (events_to_change.length == 0) {
+                    if (events_to_change.length != 0) {
                         for (var key in events_to_change) {
                             events_to_change[key].sid = parseInt(ids[1]);
                         }
@@ -859,9 +925,9 @@ function edit_repeat(event, oldStart, oldEnd) {
                     event.sid = parseInt(data);
 
                     // update sids of events_to_change if there are any
-                    if (events_to_change.length == 0) {
+                    if (events_to_change.length != 0) {
                         for (var key in events_to_change) {
-                            events_to_change[key].sid = parseInt(ids[1]);
+                            events_to_change[key].sid = parseInt(data);
                         }
                     }
                 }
@@ -925,7 +991,39 @@ function free_repeat(event) {
 
 }
 
-// TODO! figure out how to pass a function into makePOST to be executed on success
+// triggered when a user changes the endRepeat date of a previously
+// existing repeat event
+function change_endrepeat(event, oldEndRepeat) {
+    var newEndRepeat = event.endRepeat;
+
+    // find the head of the repeat chain
+    var event_chain = calendar.fullCalendar('clientEvents', function(e) {
+       return (e.type == 'repeat' && e.sid == event.sid);
+    });
+    var head = event_chain[0];
+
+    // make copy of event to add back
+    var head_copy = {
+        title: head.title,
+        start: head.start,
+        end: head.end,
+        allDay: head.allDay,
+        rrule: head.rrule,
+        endRepeat: event.endRepeat,
+        id: next_id,
+        sid: head.sid,
+        type: 'repeat'
+    };
+    next_id++;
+    head_copy.endRepeat = $.fullCalendar.parseDate(head_copy.endRepeat);
+
+    // delete the chain from the head
+    delete_repeat(head);
+
+    // add a new repeat_event
+    add_repeat(head_copy);
+}
+
 /*
  * Takes in a url for the ajax POST request along with
  * the event Javascript object to be passed and makes the
@@ -947,10 +1045,10 @@ function makePOST(url, event) {
 }
 
 // checks whether the edited event object is the last in the repeat event chain
-function lastRepeat(event) {
+function lastRepeat(event, oldStart) {
     // check to see if this is the last event in the repeat chain
     var events_ahead = calendar.fullCalendar('clientEvents', function(e) {
-        return (e.type == 'repeat' && e.sid == event.sid && e.start > event.start);
+        return (e.type == 'repeat' && e.sid == event.sid && e.start > oldStart);
     });
 
     return (events_ahead == 0);
@@ -1023,6 +1121,7 @@ function drag_prepopulate(start, end, allDay)
     $("#start_min").val(start_array[2]);
     $("#start_ampm").val(start_array[3]);
 
+    // if end exists
     if (end)
     {
         var end_array = fromDatetime(end);
@@ -1030,6 +1129,13 @@ function drag_prepopulate(start, end, allDay)
         $("#end_hour").val(end_array[1]);
         $("#end_min").val(end_array[2]);
         $("#end_ampm").val(end_array[3]);
+    }
+    // otherwise populate end with start
+    else {
+        $("#end_datepicker").val(start_array[0]);
+        $("#end_hour").val(start_array[1]);
+        $("#end_min").val(start_array[2]);
+        $("#end_ampm").val(start_array[3]);
     }
 
     if (allDay)
@@ -1039,38 +1145,44 @@ function drag_prepopulate(start, end, allDay)
 // prepopulate the edit event box when someone clicks on an event to edit it
 function click_prepopulate(calEvent)
 {
+    // populate the title and set rrule to 0 for now
     $("#title").val(calEvent.title);
-    // TODO: prepopulate the repeat rule and repeat end date
-//    $("#rrule").val(calEvent.rrule);
-//    $("#repeat_datepicker").val(calEvent.end_repeat OR SOMETHING LIKE THAT);
+    $('#rrule').val('0');
+
+
+    // populate rrule and endRepeat if event is repeat
+    if (calEvent.type == 'repeat') {
+        $("#rrule").val(calEvent.rrule.toString());
+        console.log(calEvent.endRepeat);
+        if (calEvent.endRepeat)
+            $("#repeat_datepicker").val(DatetimetoSlashdate($.fullCalendar.parseDate(calEvent.endRepeat)));
+
+        // show the endRepeat if rrule is not none
+        if ($("#rrule").val() != '0') {
+            $('#end_repeat').show();
+        }
+    }
 
     drag_prepopulate(calEvent.start, calEvent.end, calEvent.allDay);
 }
 
-// creates an event object from the edit event form, even when user does dumb things
-// returns null on no title inputted
-function inputToEvent(start) {
-
-    // get title
+// returns an object with keys and user inputted vales that correspond to all
+// the necessary fields for an event or repeatevent object
+function getUserInput(start) {
+    // title
     var title = $("#title").val();
 
-    // make sure title exists
-    if (!title)
-        return null;
-
-    // get allDay
+    // allDay
     var allDay = $("#allDay").is(':checked');
 
-    // get rrule
-    var rrule = $("#repeat_rule").val();
+    // rrule
+    var rrule = parseInt($("#rrule").val());
 
     // give type based on whether rrule exists
-    var type = (rrule) ? 'repeat' : 'event';
+    var type = (rrule != "0") ? 'repeat' : 'event';
 
-    // get endRepeat if there is an rrule
-    var endRepeat = $("#repeat_datepicker").val();
-
-
+    // endRepeat ("" if there is no rrule or if the event repeats forever)
+    var endRepeat = ($("#repeat_datepicker").val()) ? toDatetime($("#repeat_datepicker").val(), 0, 0, 'AM') : null;
 
     // get start time data
     var start_date = $("#start_datepicker").val();
@@ -1084,20 +1196,19 @@ function inputToEvent(start) {
     var end_min = parseInt($("#end_min").val());
     var end_ampm = $("#end_ampm").val();
 
-
     // check the start and end inputs, set to certain defaults if the user was dumb
 
-    // if they don't give a start date, make it the original start date
+    // if they don't give a start date, set it to the start previously
     if (! start_date)
         start_date = DatetimetoSlashdate(start);
-    // if all we have is a start date and minutes, make the event at midnightt
+    // if all we have is a start date and minutes, make the event at midnight
     if (! start_hour) {
-        start_hour = 12;
+        start_hour = start.getHours();
         start_min = 0;
         start_ampm = "AM";
     }
     // if we have a start hour but no minutes, give zero minutes
-    else if (start_hour)
+    else if (start_hour && !start_min)
         start_min = 0;
 
     // same business for end inputs
@@ -1108,7 +1219,7 @@ function inputToEvent(start) {
         end_min = 0;
         end_ampm = "AM";
     }
-    else if (end_hour)
+    else if (end_hour && !end_min)
         end_min = 0;
 
     // Now we can finally convert these to actual datetimes
@@ -1120,31 +1231,55 @@ function inputToEvent(start) {
 
 
     // handle the cases where the end is before the start
-    if (end_datetime < start_datetime)
-    {
-        end_datetime = dateChange(start_datetime, 120);
+    if (end_datetime < start_datetime) {
+        end_datetime = dateChange(start_datetime, 0, 120);
     }
     // if start and end time are the same, let's say it's implied that we have an allDay event
     if (end_datetime == start_datetime)
         allDay = true;
 
-
-    // create the event
-    var event = {
+    // create object to return
+    var userData = {
         title: title,
         start: start_datetime,
         end: end_datetime,
         allDay: allDay,
         type: type,
-        id: next_id,
         rrule: rrule,
         endRepeat: endRepeat
+    };
+
+    // return this data object
+    return userData;
+}
+
+// creates an event object from the edit event form, even when user does dumb things
+// returns null on no title inputted
+function inputToEvent(start) {
+    // get user data from inputs
+    var data = getUserInput(start);
+
+    // make sure title exists
+    if (!data.title)
+        return null;
+
+    // create the event
+    var event = {
+        title: data.title,
+        start: data.start,
+        end: data.end,
+        allDay: data.allDay,
+        type: data.type,
+        id: next_id,
+        rrule: data.rrule,
+        endRepeat: data.endRepeat
     };
     next_id++;
 
     return event;
 }
 
+// converts a DateTime object to a slash date format e.g. 12/12/2012
 function DatetimetoSlashdate(datetime)
 {
     var year = datetime.getFullYear();
@@ -1156,4 +1291,35 @@ function DatetimetoSlashdate(datetime)
     var slash_date = month+'/'+day+'/'+year;
 
     return slash_date;
+}
+
+// takes in an event object along with a data object (i.e. one returned from getUserInput())
+// and returns true on any change, false on nothing changed
+function detectChange(event, data) {
+    // do titles match?
+    if (event.title != data.title)
+        return true;
+    // start
+    if (event.start != data.start)
+        return true;
+    // end
+    if (event.end != data.end)
+        return true;
+    // allDay
+    if (event.allDay != data.allDay)
+        return true;
+    // done checking for event objects
+    if (event.type == 'event')
+        return false;
+    // else continue checking
+    else {
+        // rrule
+        if (event.rrule != data.rrule)
+            return true;
+        // endRepeat
+        if (event.endRepeat != data.endRepeat)
+            return true;
+        // if you got this far then there are no changes
+        return false;
+    }
 }
