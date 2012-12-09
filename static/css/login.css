@@ -253,3 +253,8 @@ body {
 {
     font-size: 22px;
 }
+.error_message
+{
+    float:left;
+    color: #cc0000
+}
