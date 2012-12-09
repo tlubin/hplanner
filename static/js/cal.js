@@ -8,6 +8,9 @@ next_id = 1;
 $(document).ready(function() {
     // get events and repeats from the server; upon success, initializeCalendar
     getEvents();
+
+    // configure autocomplete
+    configureAutocomplete();
 });
 
 
@@ -184,6 +187,7 @@ function repeat_event(event, repeat_until, breaks) {
  * and event handlers.
  */
 function initializeCalendar(events) {
+
     // display javascript plugin fullCalendar
     // http://arshaw.com/fullcalendar/docs/
 
@@ -210,6 +214,9 @@ function initializeCalendar(events) {
             // clear the form
             clearEventForm();
 
+            // show the share form
+            $('#share_div').show();
+
             // populate the form
             drag_prepopulate(start, end, allDay);
 
@@ -220,6 +227,7 @@ function initializeCalendar(events) {
                 width: 400,
                 draggable: false,
                 resizable: false,
+                modal: true,
                 close: function() {
                     $dialogContent.dialog("destroy");
                     $dialogContent.hide();
@@ -239,9 +247,15 @@ function initializeCalendar(events) {
                             else if (new_event['type'] == "repeat")
                                 add_repeat(new_event);
 
+                            // if the user chose to share with someone
+                            var share_input = $("#share").val();
+                            if (share_input)
+                                share_event(new_event, share_input);
+
                             // update the calendar / dialog displays
                             calendar.fullCalendar('unselect');
                             $dialogContent.dialog("close");
+
                         }
                     }
                 }
@@ -265,6 +279,7 @@ function initializeCalendar(events) {
                 width: 400,
                 draggable: false,
                 resizable: false,
+                modal: true,
                 close: function() {
                     $dialogContent.dialog("destroy");
                     $dialogContent.hide();
@@ -379,11 +394,31 @@ function initializeCalendar(events) {
                                         width: 400,
                                         draggable: false,
                                         resizable: false,
+                                        modal: true,
                                         close: function() {
                                             $prompt_user.dialog("destroy");
                                             $prompt_user.hide();
                                         },
                                         buttons: {
+                                            "This Event Only": function() {
+                                                // break_repeat on the old event date
+                                                break_repeat(calEvent);
+
+                                                // add event as new event
+                                                var new_event = {
+                                                    id: next_id,
+                                                    type: 'event',
+                                                    start: data.start,
+                                                    end: data.end,
+                                                    title: data.title,
+                                                    allDay: data.allDay
+                                                };
+                                                next_id++;
+                                                add_event(new_event);
+
+                                                // close dialog
+                                                $prompt_user.dialog("close");
+                                            },
                                             "All Future Events": function() {
                                                 // keep track of old times
                                                 var oldStart = calEvent.start;
@@ -405,26 +440,8 @@ function initializeCalendar(events) {
                                                 // close dialog
                                                 $prompt_user.dialog("close");
 
-                                            },
-                                            "This Event Only": function() {
-                                                // break_repeat on the old event date
-                                                break_repeat(calEvent);
-
-                                                // add event as new event
-                                                var new_event = {
-                                                    id: next_id,
-                                                    type: 'event',
-                                                    start: data.start,
-                                                    end: data.end,
-                                                    title: data.title,
-                                                    allDay: data.allDay
-                                                };
-                                                next_id++;
-                                                add_event(new_event);
-
-                                                // close dialog
-                                                $prompt_user.dialog("close");
                                             }
+
                                         }
                                     }).show();
                                 }
@@ -452,23 +469,24 @@ function initializeCalendar(events) {
                                 width: 400,
                                 draggable: false,
                                 resizable: false,
+                                modal: true,
                                 close: function() {
                                     $prompt_user.dialog("destroy");
                                     $prompt_user.hide();
                                 },
                                 buttons: {
+                                    "This Event Only": function() {
+                                        break_repeat(calEvent);
+
+                                        // close dialog
+                                        $prompt_user.dialog("close");
+                                    },
                                     "All Future Events": function() {
                                         delete_repeat(calEvent);
 
                                         // close dialog
                                         $prompt_user.dialog("close");
 
-                                    },
-                                    "This Event Only": function() {
-                                        break_repeat(calEvent);
-
-                                        // close dialog
-                                        $prompt_user.dialog("close");
                                     }
                                 }
                             }).show();
@@ -507,25 +525,12 @@ function initializeCalendar(events) {
                         width: 400,
                         draggable: false,
                         resizable: false,
+                        modal: true,
                         close: function() {
                             $prompt_user.dialog("destroy");
                             $prompt_user.hide();
                         },
                         buttons: {
-                            "All Future Events": function() {
-                                // get oldStart and oldEnd
-                                var newStart = event.start;
-                                var newEnd = event.end;
-                                if (!newEnd)
-                                    newEnd = newStart;
-                                var oldStart = dateChange(newStart, -1 * dayDelta, -1 * minuteDelta);
-                                var oldEnd = dateChange(newEnd, -1 * dayDelta, -1 * minuteDelta);
-
-                                edit_repeat(event, oldStart, oldEnd);
-
-                                // close dialog
-                                $prompt_user.dialog("close");
-                            },
                             "This Event Only": function() {
                                 // new event that will be added
                                 var new_event = {
@@ -545,6 +550,20 @@ function initializeCalendar(events) {
 
                                 // add new event
                                 add_event(new_event);
+
+                                // close dialog
+                                $prompt_user.dialog("close");
+                            },
+                            "All Future Events": function() {
+                                // get oldStart and oldEnd
+                                var newStart = event.start;
+                                var newEnd = event.end;
+                                if (!newEnd)
+                                    newEnd = newStart;
+                                var oldStart = dateChange(newStart, -1 * dayDelta, -1 * minuteDelta);
+                                var oldEnd = dateChange(newEnd, -1 * dayDelta, -1 * minuteDelta);
+
+                                edit_repeat(event, oldStart, oldEnd);
 
                                 // close dialog
                                 $prompt_user.dialog("close");
@@ -581,25 +600,12 @@ function initializeCalendar(events) {
                         width: 400,
                         draggable: false,
                         resizable: false,
+                        modal: true,
                         close: function() {
                             $prompt_user.dialog("destroy");
                             $prompt_user.hide();
                         },
                         buttons: {
-                            "All Future Events": function() {
-                                // get newStart and newEnd
-                                var oldStart = event.start;
-                                var oldEnd = event.end;
-                                if (!oldEnd)
-                                    oldEnd = oldStart;
-                                var newStart = dateChange(oldStart, dayDelta, minuteDelta);
-                                var newEnd = dateChange(oldEnd, dayDelta, minuteDelta);
-
-                                edit_repeat(event, newStart, newEnd, allDay);
-
-                                // close dialog
-                                $prompt_user.dialog("close");
-                            },
                             "This Event Only": function() {
                                 // create a break
                                 break_repeat(event);
@@ -623,6 +629,20 @@ function initializeCalendar(events) {
                                 };
                                 next_id++;
                                 add_event(new_event);
+
+                                // close dialog
+                                $prompt_user.dialog("close");
+                            },
+                            "All Future Events": function() {
+                                // get newStart and newEnd
+                                var oldStart = event.start;
+                                var oldEnd = event.end;
+                                if (!oldEnd)
+                                    oldEnd = oldStart;
+                                var newStart = dateChange(oldStart, dayDelta, minuteDelta);
+                                var newEnd = dateChange(oldEnd, dayDelta, minuteDelta);
+
+                                edit_repeat(event, newStart, newEnd, allDay);
 
                                 // close dialog
                                 $prompt_user.dialog("close");
@@ -674,7 +694,9 @@ function clearEventForm() {
     $("#allDay").attr('checked', false);
     $("#rrule").val("0");
     $("#end_repeat").hide();
-    $("repeat_datepicker").val('')
+    $("repeat_datepicker").val('');
+    $("#share").val('');
+    $('#share_div').hide();
 }
 
 // adds a non-repeating event to the database, renders the calendar
@@ -1238,6 +1260,10 @@ function getUserInput(start) {
     if (end_datetime == start_datetime)
         allDay = true;
 
+    // make sure endRepeat is now before the start date
+    if (endRepeat < start_datetime)
+        endRepeat = null;
+
     // create object to return
     var userData = {
         title: title,
@@ -1322,4 +1348,125 @@ function detectChange(event, data) {
         // if you got this far then there are no changes
         return false;
     }
+}
+
+function configureAutocomplete()
+{
+    //make an ajax request to find all the user-names
+    $.ajax(
+        {
+            type: "GET",
+            url: 'get_users',
+            dataType: "json",
+            success: function(data) {
+                // empty default select
+                //making a global list of users so we can use it later to fo sharing checks
+                userList = [];
+                for (var user in data)
+                    userList.push(data[user]['fields']["username"]);
+
+
+                console.log(userList);
+
+                // the following is copied from http://jqueryui.com/autocomplete/#multiple, just sets p autocomplete for sharing
+                jq183(function() {
+//
+                    function split( val ) {
+                        return val.split( /,\s*/ );
+                    }
+                    function extractLast( term ) {
+                        return split( term ).pop();
+                    }
+
+                    jq192( "#share" )
+                        // don't navigate away from the field on tab when selecting an item
+                        .bind( "keydown", function( event ) {
+                            if ( event.keyCode === jq192.ui.keyCode.TAB &&
+                                jq192( this ).data( "autocomplete" ).menu.active ) {
+                                event.preventDefault();
+                            }
+                        })
+                        .autocomplete({
+                            minLength: 0,
+                            autofocus: true,
+                            source: function( request, response ) {
+                                // delegate back to autocomplete, but extract the last term
+                                response( jq192.ui.autocomplete.filter(
+                                    userList, extractLast( request.term ) ) );
+                            },
+                            focus: function() {
+                                // prevent value inserted on focus
+                                return false;
+
+                            },
+                            select: function( event, ui ) {
+                                var terms = split( this.value );
+                                // remove the current input
+                                terms.pop();
+                                // add the selected item
+                                terms.push( ui.item.value );
+                                // add placeholder to get the comma-and-space at the end
+                                terms.push( "" );
+                                this.value = terms.join( ", " );
+                                return false;
+                            }
+                        });
+                });
+
+
+            }
+        }
+    );
+}
+
+function share_event(event_to_share, share_input)
+{
+    // make an array of all the perhaps-usernames shared with
+    var share_array = share_input.split(", ");
+
+    // create an array of those who are actually users, not allowing for redundancy
+    var users_array = [];
+    for (var key in share_array)
+    {
+        var name = share_array[key]
+        // prevent repetition
+        if (string_in_array(name, userList) && ! string_in_array(name, users_array))
+            users_array.push(name);
+    }
+
+    // quit if there were no valid usernames in the user's input
+    if (users_array.length == 0)
+        return;
+
+    // package up the data of the event, including those to whom it should be sent
+    var sharing_event = {
+        title: event_to_share.title,
+        start: event_to_share.start,
+        end: event_to_share.end,
+        allDay: event_to_share.allDay,
+        type: event_to_share.type,
+        rrule: event_to_share.rrule,
+        endRepeat: event_to_share.endRepeat
+    };
+    console.log(sharing_event);
+
+    // share event with each user
+    for (var user in users_array) {
+        sharing_event['user'] = users_array[user];
+
+        //    now that we've packaged up what the user wants to send to others, change the other users' events in the server
+        makePOST('cal/share_event', sharing_event);
+    }
+
+}
+
+// see if some string is in an array of strings
+function string_in_array(string, array)
+{
+    for (key in array)
+    {
+        if (string == array[key])
+            return true;
+    }
+    return false;
 }

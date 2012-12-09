@@ -2,6 +2,8 @@ from django.core import serializers
 from cal.models import Event, RepeatEvent, BreakEvent
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.models import User
+from notification.models import Note
 import datetime
 import re
 import itertools
@@ -28,7 +30,6 @@ def get_events(request):
 # ------------------------------------------------------------------------
 @csrf_exempt
 def add_event(request):
-    print request.POST
     # get new event data
     user = request.user
     title = request.POST['title']
@@ -388,6 +389,66 @@ def free_repeat(request):
     ids = ids[:-1]
 
     return HttpResponse(ids)
+
+
+# ------------------------------------------------------------------------
+# Takes client side input and shares an event with one or more users
+# ------------------------------------------------------------------------
+@csrf_exempt
+def share_event(request):
+
+    # unload the sent data
+    to_user = request.POST["user"]
+    title = request.POST["title"]
+    start = strToDateTime(request.POST["start"])
+    end = strToDateTime(request.POST["end"])
+    allDay = True if (request.POST["allDay"] == "true") else False
+    type = request.POST["type"]
+    rrule = request.POST["rrule"]
+    endRepeat = strToDateTime(request.POST["endRepeat"])
+
+    # convert 'null' to None where needed
+
+    # get the actual user
+    user = User.objects.filter(username = to_user)[0]
+
+    # handle if non-repeating event
+    if type == "event":
+        shared_event = Event(
+            user = user,
+            title = title,
+            start = start,
+            end = end,
+            allDay = allDay
+        )
+
+    # handle if repeating event
+    else:
+        shared_event = RepeatEvent(
+            user = user,
+            title = title,
+            start = start,
+            end = end,
+            allDay = allDay,
+            rrule =  rrule,
+            endRepeat = endRepeat
+        )
+
+    # save the shared event
+    shared_event.save()
+
+    # leave a message for whoever we shared with
+    slash_date = str(start.month) + "/" + str(start.day) + "/" + str(start.year)[2] + str(start.year)[3]
+    repeat_message = "an" if (type == "event") else "a repeating"
+    start_message = "" if (type == "event") else "starting "
+    message = request.user.username + " added " + repeat_message + " event to your calendar " + start_message + "on " + slash_date
+    note = Note(
+        user = user,
+        message = message
+    )
+    note.save()
+
+    return HttpResponse ("event shared")
 
 
 

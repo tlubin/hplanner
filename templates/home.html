@@ -5,17 +5,19 @@
     {#    various css#}
     <link rel="stylesheet" href="{% static 'css/reset.css' %}" type="text/css" />
     <link rel="stylesheet" href="{% static 'css/fullcalendar.css' %}" type="text/css" />
-    <link rel="stylesheet" href="{% static 'css/categories.css' %}" type="text/css" />
-    <link rel="stylesheet" href="{% static 'css/main.css' %}" type="text/css" />
     <link rel='stylesheet' type='text/css' href='http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.2/themes/cupertino/jquery-ui.css' />
     <link rel="stylesheet" href="http://static.jquery.com/ui/css/demo-docs-theme/ui.theme.css" type="text/css" media="all" />
     <link rel="stylesheet" href="{% static 'css/todo.css' %}" type="text/css" />
+    <link rel="stylesheet" href="{% static 'css/main.css' %}" type="text/css" />
+
+
 
 
     <script src="http://code.jquery.com/jquery-1.8.3.js"></script>
     <script>
         var jq183 = jQuery.noConflict();
     </script>
+
     <script src="http://code.jquery.com/ui/1.9.2/jquery-ui.js"></script>
     <script>
         var jq192 = jQuery.noConflict();
@@ -65,24 +67,38 @@
         });
     </script>
 
+
+
+
     {#    our javascript#}
     <script type='text/javascript' src="{%  static 'js/fullcalendar.js' %}"></script>
     <script type='text/javascript' src="{%  static 'js/main.js' %}"></script>
     <script type='text/javascript' src="{%  static 'js/todo.js' %}"></script>
     <script type='text/javascript' src="{%  static 'js/cal.js' %}"></script>
-    <script type='text/javascript' src="{%  static 'js/categories.js' %}"></script>
     <script type='text/javascript' src="{%  static 'js/event_edit.js' %}"></script>
     <script type='text/javascript' src="{%  static 'js/jquery.keyfilter.js' %}"></script>
+    <script type='text/javascript' src="{%  static 'js/notification.js' %}"></script>
+
 
 
 </head>
+
 <body>
-<h1>Harvard Planner</h1>
-<div id="settings_container">
-    <button type="button" id="settings_button">Settings</button>
-    <button type="button" id="logout_button" onclick="location.href='logout'"> Logout</button>
-</div>
+<ul id="menu">
+
+    <li id="log_outbutton" onclick="location.href='logout'">
+        <a href="javascript: void(0)">Logout</a>
+    </li>
+    <li style="width: 200px">
+        <a href="#">Notifications</a>
+        <ul id="notifications" class="notification">
+
+        </ul>
+    </li>
+</ul>
+
 <div id='calendar'></div>
+
 <div id="todo_div">
     <h3>Add Item To Do</h3>
     <form>
@@ -92,27 +108,16 @@
     <br/>
     <ul id="items" class="sortable"></ul>
 </div>
-{#<div id="event_edit_container">#}
-{#    <form>#}
-{#        <input type="hidden" />#}
-{#        <ul>#}
-{#            <li>#}
-{#                <label for="title">Title: </label><input id="title"  type="text"/>#}
-{#                <label for="share">Share with: </label>#}
-{#                <select id="share"></select>#}
-{#                <label for="repeat_check">Repeat? </label><input id="repeat_check" type="checkbox">#}
-{#            </li>#}
-{#        </ul>#}
-{#    </form>#}
-{#</div>#}
+
 <div id="event_edit_container">
     <form>
         <input type="hidden" />
         <ul>
             <li>
-                <label for="title">Title:</label><input id="title"  type="text" size="37" maxlength="37" autocomplete="off"/><br/>
-                {#                <label for="share">Share with: </label>#}
-                {#                <select id="share"></select>#}
+                <label for="title">Title:</label><input id="title" type="text" size="37" maxlength="37"/><br/>
+                <div id="share_div">
+                     <label for="share">Share with: </label><input id="share" class = "ui" type="text" size="37"><br/>
+                </div>
                 <label for="start_datepicker">Start:</label><input id="start_datepicker" type="text" size="11" maxlength="10"/>
                 <label for="start_hour">    </label><input class='hour_filter' id="start_hour" type="text" size="2" maxlength="2"/>
                 <label for="start_min"> : </label><input class='min_filter' id="start_min" type="text" size="2" maxlength="2"/>
@@ -142,11 +147,13 @@
         </ul>
     </form>
 </div>
+
 <div id="repeat_prompt">
     <form>
         <input type="hidden" />
     </form>
 </div>
+
 <div id="settings">
     <h2>Settings</h2>
     <p>
@@ -154,5 +161,7 @@
         popup.
     </p>
 </div>
+
 </body>
+
 </html>

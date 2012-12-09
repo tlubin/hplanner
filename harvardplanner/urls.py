@@ -13,6 +13,7 @@ urlpatterns = patterns('',
     url(r'^login_check$', 'harvardplanner.views.login_check'),
     url(r'^logout$', 'harvardplanner.views.logout_view'),
     url(r'^register$', 'harvardplanner.views.register'),
+    url(r'^get_users$', 'harvardplanner.views.get_users'),
 
     # calendar urls
     url(r'^cal/', include('cal.urls')),
@@ -20,7 +21,9 @@ urlpatterns = patterns('',
     # to_do urls
     url(r'^todo/', include('to_do.urls')),
 
-    # categories urls
-    url(r'^cat/', include('categories.urls')),
+    # notification urls
+    url(r'^notification/', include('notification.urls')),
+
+
 
 )

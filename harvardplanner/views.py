@@ -1,8 +1,7 @@
 from django.shortcuts import render_to_response
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
-
-
+from django.core import serializers
 from django.http import HttpResponse, HttpResponseRedirect
 from django.views.decorators.csrf import csrf_exempt
 
@@ -53,4 +52,20 @@ def register(request):
         return HttpResponse('success')
     except:
         return HttpResponse('failure')
+
+
+# ------------------------------------------------------------------------
+# Returns all the User objects. Used for autocomplete in sharing.
+# ------------------------------------------------------------------------
+def get_users(request):
+    # get all the users
+    users = User.objects.all()
+
+    # exclude the current user
+    users = users.exclude(username=request.user.username)
+
+    # convert user data to JSON
+    json_data = serializers.serialize('json', users)
+    return HttpResponse (json_data, mimetype='application/json')
+
 

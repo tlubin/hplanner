@@ -5,6 +5,7 @@
  * Time: 11:19 PM
  * To change this template use File | Settings | File Templates.
  */
+minPassLength=6;
 
 $(document).ready(function() {
     // event handler for login pressed
@@ -80,15 +81,25 @@ function register() {
 
     // check for empty fields
     if (username == '' || pword1 == '' || pword2 == '') {
-        $('#register_message').text("One of the fields is empty. ARE YOU STUPID?!!");
+        $('#register_message').text("One of the fields is empty.");
+        return;
+    }
+    if(pword1.length< minPassLength)
+    {
+        $('#register_message').text("Password too short!");
+        return;
+    }
+    // ensure matching passwords
+    if (pword1 != pword2) {
+        $('#register_message').text("The passwords do not match.");
+        return;
+    }
+    if (username.search(",") != -1)
+    {
+        $('#register_message').text("No Commas Please!")
         return;
     }
 
-    // ensure matching passwords
-    if (pword1 != pword2) {
-        $('#register_message').text("The passwords do not match. AMERICA!!");
-        return;
-    }
 
     // make user object to pass to server
     var user = {

@@ -20,4 +20,7 @@ urlpatterns = patterns('cal.views',
     # for repeat events, adding break / converting past to events
     url(r'^break_repeat', 'break_repeat'),
     url(r'^free_repeat', 'free_repeat'),
+
+    # to share an event
+    url(r'^share_event$', 'share_event'),
 )

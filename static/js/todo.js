@@ -18,8 +18,7 @@ function initializeForm() {
     $( "ul#items" ).sortable({
         update: function( event, ui ) {
             UpdateOrder($(this).sortable('toArray'));
-        },
-        axis: 'y'
+        }
     }).disableSelection();
 
     // populate the to do list with all the tasks in the database
@@ -64,12 +63,21 @@ function addItem() {
 
 function AppendItem( itemTitle, itemId) {
     // build checkbox
-    var checkbox = "<input type='checkbox' id='checker' style='float: right'/>";
+    var checkbox = "<img src ='http://www-03.ibm.com/software/lotus/symphony/gallery.nsf/GalleryClipArtAll/DB4C92E3748B027785257596003148CF/$File/Sign-Checkmark02-Green.png' width='32px;' height='24px;' id='checker' style='float: right'/>";
 
     // build list item, add an id (which may be a placeholder, hide it
     var $listItem = $("<li class='ui-state-default'> " + itemTitle + checkbox + "</li>");
     $listItem.attr('id', itemId);
+    $listItem.find("#checker").hide();
+
     $listItem.hide();
+    $listItem.mouseover( function(){
+        $listItem.find("#checker").show();
+
+    });
+    $listItem.mouseleave( function(){
+        $listItem.find("#checker").hide();
+    });
 
 //  remove the corresponding list item when remove is clicked, and update the TaskManager to store the new order
     $listItem.find("#checker").click( function() {
@@ -103,10 +111,8 @@ function LOADTASKS()
     );
 }
 
-
 function JSONtoTASKS(json)
 {
-    // make another http request to figure out the order in which we want to display the tasks, the do it
     $.ajax(
         {
             type:"GET",
@@ -114,8 +120,8 @@ function JSONtoTASKS(json)
             dataType: "json",
             success: function (data)
             {
-                if (data.length != 0)
-                {
+                // get the order of elements as an array
+                if (data.length != 0) {
                     csv_order = data[0]["fields"]["order"];
                     order = csv_order.split(',');
 
@@ -130,6 +136,7 @@ function JSONtoTASKS(json)
                         }
                     }
                 }
+
             }
         }
     );
@@ -137,13 +144,10 @@ function JSONtoTASKS(json)
 
 function ADDtoDATABASE($listItem)
 {
-    // package up the data to send to the server
     var item_to_send = {
         title: $listItem.text()
         // todo add a date
     };
-
-    // send it, modifying the list element according to how the database saves it
     $.ajax(
         {
             type: "POST",
@@ -164,6 +168,7 @@ function REMOVEfromDATABASE(id_to_delete)
 {
     var item_to_send = {
         id: id_to_delete
+        // todo add a date
     };
     $.ajax(
         {

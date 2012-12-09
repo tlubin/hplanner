@@ -4,6 +4,7 @@ $(document).ready(function() {
 
     // configure the hour/min inputs of start/end
     configureTimeInputs();
+
 });
 
 
@@ -73,6 +74,3 @@ function configureTimeInputs() {
     });
 
 }
-
-
-
