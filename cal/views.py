@@ -1,6 +1,6 @@
 from django.core import serializers
 from cal.models import Event, RepeatEvent, BreakEvent
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
 from notification.models import Note
@@ -14,15 +14,18 @@ import itertools
 # one json and sends the result
 # ------------------------------------------------------------------------
 def get_events(request):
-    # get events for user
-    user = request.user
-    events = user.event_set.all()
-    repeat_events = user.repeatevent_set.all()
-    all_events = itertools.chain(events, repeat_events)
+    if request.is_ajax():
+        # get events for user
+        user = request.user
+        events = user.event_set.all()
+        repeat_events = user.repeatevent_set.all()
+        all_events = itertools.chain(events, repeat_events)
 
-    # convert event data to JSON
-    json_data = serializers.serialize('json', all_events, use_natural_keys=True)
-    return HttpResponse (json_data, mimetype='application/json')
+        # convert event data to JSON
+        json_data = serializers.serialize('json', all_events, use_natural_keys=True)
+        return HttpResponse (json_data, mimetype='application/json')
+    else:
+        return HttpResponseRedirect('/')
 
 
 # ------------------------------------------------------------------------
@@ -30,25 +33,29 @@ def get_events(request):
 # ------------------------------------------------------------------------
 @csrf_exempt
 def add_event(request):
-    # get new event data
-    user = request.user
-    title = request.POST['title']
-    start = strToDateTime(request.POST['start'])
-    end = strToDateTime(request.POST['end'])
-    allDay = True if (request.POST['allDay'] == 'true') else False
+    if request.method == 'POST':
+        # get new event data
+        user = request.user
+        title = request.POST['title']
+        start = strToDateTime(request.POST['start'])
+        end = strToDateTime(request.POST['end'])
+        allDay = True if (request.POST['allDay'] == 'true') else False
 
-    # make new event and save
-    event = Event(
-        user = user,
-        title=title,
-        start=start,
-        end=end,
-        allDay=allDay
-    )
-    event.save()
+        # make new event and save
+        event = Event(
+            user = user,
+            title=title,
+            start=start,
+            end=end,
+            allDay=allDay
+        )
+        event.save()
 
-    # return the id of the new event
-    return HttpResponse(str(event.id))
+        # return the id of the new event
+        return HttpResponse(str(event.id))
+    else:
+        return HttpResponseRedirect('/')
+
 
 
 # ------------------------------------------------------------------------
@@ -56,31 +63,34 @@ def add_event(request):
 # ------------------------------------------------------------------------
 @csrf_exempt
 def add_repeat(request):
-    # get new event data
-    user = request.user
-    title = request.POST['title']
-    start = strToDateTime(request.POST['start'])
-    end = strToDateTime(request.POST['end'])
-    allDay = True if (request.POST['allDay'] == 'true') else False
-    rrule = int(request.POST['rrule'])
-    endRepeat = strToDateTime(request.POST['endRepeat'])
-    print request.POST['endRepeat']
-    print endRepeat
+    if request.method == 'POST':
+        # get new event data
+        user = request.user
+        title = request.POST['title']
+        start = strToDateTime(request.POST['start'])
+        end = strToDateTime(request.POST['end'])
+        allDay = True if (request.POST['allDay'] == 'true') else False
+        rrule = int(request.POST['rrule'])
+        endRepeat = strToDateTime(request.POST['endRepeat'])
+        print request.POST['endRepeat']
+        print endRepeat
 
-    # make new RepeatEvent and save
-    event = RepeatEvent(
-        user = user,
-        title=title,
-        start=start,
-        end=end,
-        allDay=allDay,
-        endRepeat = endRepeat,
-        rrule = rrule
-    )
-    event.save()
+        # make new RepeatEvent and save
+        event = RepeatEvent(
+            user = user,
+            title=title,
+            start=start,
+            end=end,
+            allDay=allDay,
+            endRepeat = endRepeat,
+            rrule = rrule
+        )
+        event.save()
 
-    # return the id of the new event
-    return HttpResponse(str(event.id))
+        # return the id of the new event
+        return HttpResponse(str(event.id))
+    else:
+        return HttpResponseRedirect('/')
 
 
 # ------------------------------------------------------------------------
@@ -88,14 +98,16 @@ def add_repeat(request):
 # ------------------------------------------------------------------------
 @csrf_exempt
 def delete_event(request):
-    # get event id
-    user = request.user
-    id = request.POST['sid']
+    if request.method == 'POST':
+        # get event id
+        user = request.user
+        id = request.POST['sid']
 
-    # delete event
-    user.event_set.get(pk = id).delete()
-    return HttpResponse("Okay")
-
+        # delete event
+        user.event_set.get(pk = id).delete()
+        return HttpResponse("Okay")
+    else:
+        return HttpResponseRedirect('/')
 
 
 # ------------------------------------------------------------------------
@@ -107,53 +119,57 @@ def delete_event(request):
 # ------------------------------------------------------------------------
 @csrf_exempt
 def delete_repeat(request):
-    # get event id and user
-    user = request.user
-    id = request.POST['sid']
-    date = strToDateTime(request.POST['start'])
+    if request.method == 'POST':
+        # get event id and user
+        user = request.user
+        id = request.POST['sid']
+        date = strToDateTime(request.POST['start'])
 
-    # get type to deal with case of free repeat on second to last
-    type = request.POST['type']
+        # get type to deal with case of free repeat on second to last
+        type = request.POST['type']
 
-    # container for httpresponse
-    idreturn = ''
+        # container for httpresponse
+        idreturn = ''
 
-    # get RepeatEvent object
-    repeat = user.repeatevent_set.get(pk = id)
+        # get RepeatEvent object
+        repeat = user.repeatevent_set.get(pk = id)
 
-    # check whether date is at the head
-    # special case of type change on the second from the head of repeat event (type is event)
-    if date == repeat.start or type == 'event':
-        # delete RepeatEvent
-        repeat.delete()
+        # check whether date is at the head
+        # special case of type change on the second from the head of repeat event (type is event)
+        if date == repeat.start or type == 'event':
+            # delete RepeatEvent
+            repeat.delete()
 
-    # check if you are one past the head
-    elif oneBack(date, repeat) == repeat.start:
-        # make the head into a new Event object
-        event = Event(
-            user = user,
-            title=repeat.title,
-            start=repeat.start,
-            end=repeat.end,
-            allDay=repeat.allDay
-        )
-        event.save()
+        # check if you are one past the head
+        elif oneBack(date, repeat) == repeat.start:
+            # make the head into a new Event object
+            event = Event(
+                user = user,
+                title=repeat.title,
+                start=repeat.start,
+                end=repeat.end,
+                allDay=repeat.allDay
+            )
+            event.save()
 
-        # save id to return
-        idreturn = str(event.id)
+            # save id to return
+            idreturn = str(event.id)
 
-        # delete RepeatEvent
-        repeat.delete()
-    # not head and not one past head
+            # delete RepeatEvent
+            repeat.delete()
+        # not head and not one past head
+        else:
+            # set end date to one instance back of the passed in date
+            end = oneBack(date, repeat)
+            # update repeat and save
+            repeat.endRepeat = end
+            repeat.save()
+
+        # return id or ''
+        return HttpResponse(idreturn)
     else:
-        # set end date to one instance back of the passed in date
-        end = oneBack(date, repeat)
-        # update repeat and save
-        repeat.endRepeat = end
-        repeat.save()
+        return HttpResponseRedirect('/')
 
-    # return id or ''
-    return HttpResponse(idreturn)
 
 
 
@@ -163,25 +179,28 @@ def delete_repeat(request):
 # ------------------------------------------------------------------------
 @csrf_exempt
 def edit_event(request):
-    # get new event data
-    user = request.user
-    id = request.POST['sid']
-    title = request.POST['title']
-    start = strToDateTime(request.POST['start'])
-    end = strToDateTime(request.POST['end'])
-    allDay = True if (request.POST['allDay'] == 'true') else False
+    if request.method == 'POST':
+        # get new event data
+        user = request.user
+        id = request.POST['sid']
+        title = request.POST['title']
+        start = strToDateTime(request.POST['start'])
+        end = strToDateTime(request.POST['end'])
+        allDay = True if (request.POST['allDay'] == 'true') else False
 
-    # get event to update
-    event = user.event_set.get(pk = id)
+        # get event to update
+        event = user.event_set.get(pk = id)
 
-    # update elements and save
-    event.title = title
-    event.start = start
-    event.end = end
-    event.allDay = allDay
-    event.save()
+        # update elements and save
+        event.title = title
+        event.start = start
+        event.end = end
+        event.allDay = allDay
+        event.save()
 
-    return HttpResponse("Okay")
+        return HttpResponse("Okay")
+    else:
+        return HttpResponseRedirect('/')
 
 
 # ------------------------------------------------------------------------
@@ -193,111 +212,115 @@ def edit_event(request):
 # ------------------------------------------------------------------------
 @csrf_exempt
 def edit_repeat(request):
-    # get passed in data
-    user = request.user
-    id = request.POST['sid']
-    oldStart = strToDateTime(request.POST['oldStart'])
-    newStart = strToDateTime(request.POST['start'])
-    newEnd = strToDateTime(request.POST['end'])
-    type = request.POST['type']
-    endRepeat = request.POST['endRepeat']
+    if request.method == 'POST':
+        # get passed in data
+        user = request.user
+        id = request.POST['sid']
+        oldStart = strToDateTime(request.POST['oldStart'])
+        newStart = strToDateTime(request.POST['start'])
+        newEnd = strToDateTime(request.POST['end'])
+        type = request.POST['type']
+        endRepeat = request.POST['endRepeat']
 
-    # handle datatype conversions
-    if endRepeat == 'null':
-        endRepeat = None
+        # handle datatype conversions
+        if endRepeat == 'null':
+            endRepeat = None
 
-    # get old RepeatEvent object
-    repeat = user.repeatevent_set.get(pk = id)
-    breaks = repeat.breaks.all()
-    oldEndRepeat = repeat.endRepeat
+        # get old RepeatEvent object
+        repeat = user.repeatevent_set.get(pk = id)
+        breaks = repeat.breaks.all()
+        oldEndRepeat = repeat.endRepeat
 
-    # get break events to move to new repeatevent
-    breaks_new = []
-    for br in breaks:
-        if br.date > oldStart:
-            # remove from old repeat
-            repeat.breaks.remove(br)
-            # add to breaks_new array
-            breaks_new.append(br)
+        # get break events to move to new repeatevent
+        breaks_new = []
+        for br in breaks:
+            if br.date > oldStart:
+                # remove from old repeat
+                repeat.breaks.remove(br)
+                # add to breaks_new array
+                breaks_new.append(br)
 
-    # container to hold httpresponse of ids
-    ids = ''
+        # container to hold httpresponse of ids
+        ids = ''
 
-    # check whether oldStart is the head
-    if oldStart == repeat.start:
-        # delete old RepeatEvent
-        repeat.delete()
+        # check whether oldStart is the head
+        if oldStart == repeat.start:
+            # delete old RepeatEvent
+            repeat.delete()
 
-    # check if you are one past the head
-    elif oneBack(oldStart, repeat) == repeat.start:
-        # make the head of the old RepeatEvent into a new Event object
-        event = Event(
-            user = user,
-            title=repeat.title,
-            start=repeat.start,
-            end=repeat.end,
-            allDay=repeat.allDay
-        )
-        event.save()
+        # check if you are one past the head
+        elif oneBack(oldStart, repeat) == repeat.start:
+            # make the head of the old RepeatEvent into a new Event object
+            event = Event(
+                user = user,
+                title=repeat.title,
+                start=repeat.start,
+                end=repeat.end,
+                allDay=repeat.allDay
+            )
+            event.save()
 
-        # add id to container
-        ids = str(event.id) + ','
+            # add id to container
+            ids = str(event.id) + ','
 
-        # delete old RepeatEvent
-        repeat.delete()
+            # delete old RepeatEvent
+            repeat.delete()
 
-    # otherwise
-    else:
-        # set end date of old RepeatEvent to one instance back of the passed in date
-        end = oneBack(oldStart,repeat)
-        # update old RepeatEvent and save
-        repeat.endRepeat = end
-        repeat.save()
+        # otherwise
+        else:
+            # set end date of old RepeatEvent to one instance back of the passed in date
+            end = oneBack(oldStart,repeat)
+            # update old RepeatEvent and save
+            repeat.endRepeat = end
+            repeat.save()
 
 
-    # create new Event object if you edited the last in the chain
-    # could be editing last in chain and making it a new rrule
-    if type == 'event':
-        tail = Event(
-            user = user,
-            title=request.POST['title'],
-            start=newStart,
-            end=newEnd,
-            allDay=request.POST['allDay']
-        )
-        tail.save()
+        # create new Event object if you edited the last in the chain
+        # could be editing last in chain and making it a new rrule
+        if type == 'event':
+            tail = Event(
+                user = user,
+                title=request.POST['title'],
+                start=newStart,
+                end=newEnd,
+                allDay=request.POST['allDay']
+            )
+            tail.save()
 
-        # add id to container
-        ids += str(tail.id)
+            # add id to container
+            ids += str(tail.id)
 
-    # create new RepeatEvent object otherwise
-    else:
-        new_repeat = RepeatEvent(
-            user = user,
-            title=request.POST['title'],
-            start=newStart,
-            end=newEnd,
-            allDay=request.POST['allDay'],
-            rrule = int(request.POST['rrule']),
-            endRepeat = endRepeat
-        )
-        new_repeat.save()
-
-        # add id to container
-        ids += str(new_repeat.id)
-
-        # move breaks and endRepeat to new chain by delta
-        delta = newStart - oldStart
-        for br in breaks_new:
-            br.date += delta
-            br.save()
-            new_repeat.breaks.add(br)
-        if (oldEndRepeat):
-            new_repeat.endRepeat = oldEndRepeat + delta
+        # create new RepeatEvent object otherwise
+        else:
+            new_repeat = RepeatEvent(
+                user = user,
+                title=request.POST['title'],
+                start=newStart,
+                end=newEnd,
+                allDay=request.POST['allDay'],
+                rrule = int(request.POST['rrule']),
+                endRepeat = endRepeat
+            )
             new_repeat.save()
 
-    # '3' OR '1,3' where first number is the event id for the head and second is id of new RepeatEvent / Event (if last moved is tail)
-    return HttpResponse(ids)
+            # add id to container
+            ids += str(new_repeat.id)
+
+            # move breaks and endRepeat to new chain by delta
+            delta = newStart - oldStart
+            for br in breaks_new:
+                br.date += delta
+                br.save()
+                new_repeat.breaks.add(br)
+            if (oldEndRepeat):
+                new_repeat.endRepeat = oldEndRepeat + delta
+                new_repeat.save()
+
+        # '3' OR '1,3' where first number is the event id for the head and second is id of new RepeatEvent / Event (if last moved is tail)
+        return HttpResponse(ids)
+    else:
+        return HttpResponseRedirect('/')
+
 
 
 # ------------------------------------------------------------------------
@@ -306,20 +329,24 @@ def edit_repeat(request):
 # ------------------------------------------------------------------------
 @csrf_exempt
 def break_repeat(request):
-    # get event id
-    user = request.user
-    id = request.POST['sid']
-    date = strToDateTime(request.POST['start'])
+    if request.method == 'POST':
+        # get event id
+        user = request.user
+        id = request.POST['sid']
+        date = strToDateTime(request.POST['start'])
 
-    # get the RepeatEvent object
-    repeat = user.repeatevent_set.get(pk = id)
+        # get the RepeatEvent object
+        repeat = user.repeatevent_set.get(pk = id)
 
-    # add a BreakEvent to repeat
-    new_break = BreakEvent(date=date)
-    new_break.save()
-    repeat.breaks.add(new_break)
+        # add a BreakEvent to repeat
+        new_break = BreakEvent(date=date)
+        new_break.save()
+        repeat.breaks.add(new_break)
 
-    return HttpResponse("Okay")
+        return HttpResponse("Okay")
+    else:
+        return HttpResponseRedirect('/')
+
 
 
 # ------------------------------------------------------------------------
@@ -329,66 +356,70 @@ def break_repeat(request):
 # ------------------------------------------------------------------------
 @csrf_exempt
 def free_repeat(request):
-    # get passed in data
-    user = request.user
-    event_start = strToDateTime(request.POST['start']) # last date to free (starting from head)
-    event_end = strToDateTime(request.POST['end'])
-    id = request.POST['sid']
-    title = request.POST['title']
-    allDay = True if (request.POST['allDay'] == 'true') else False
-    rrule = int(request.POST['rrule'])
+    if request.method == 'POST':
+        # get passed in data
+        user = request.user
+        event_start = strToDateTime(request.POST['start']) # last date to free (starting from head)
+        event_end = strToDateTime(request.POST['end'])
+        id = request.POST['sid']
+        title = request.POST['title']
+        allDay = True if (request.POST['allDay'] == 'true') else False
+        rrule = int(request.POST['rrule'])
 
-    # calculate the event length if an end exists
-    if event_end:
-        event_length = event_end - event_start
-
-    # get the old RepeatEvent object
-    repeat = user.repeatevent_set.all().get(pk = id)
-    head = repeat.start
-    rruleOld = repeat.rrule;
-
-    # format the breaks array
-    breaks = []
-    for _break in repeat.breaks.all():
-        breaks.append(_break.date)
-
-    # delete the old RepeatEvent object
-    repeat.delete()
-
-    # loop from head to event_start, making new Event objects
-    cursor = head
-    ids = ''
-    while cursor < event_start:
-        # check if current date is a break
-        if cursor in breaks:
-            continue
-
-        # make new event and save
-        event = Event(
-            user=user,
-            title=title,
-            start=cursor,
-            end=cursor,
-            allDay=allDay
-        )
-
-        # add length of event if it exists
+        # calculate the event length if an end exists
         if event_end:
-            event.end += event_length
+            event_length = event_end - event_start
 
-        # save the event
-        event.save()
+        # get the old RepeatEvent object
+        repeat = user.repeatevent_set.all().get(pk = id)
+        head = repeat.start
+        rruleOld = repeat.rrule;
 
-        # add id to ids csv string
-        ids += str(event.id) + ','
+        # format the breaks array
+        breaks = []
+        for _break in repeat.breaks.all():
+            breaks.append(_break.date)
 
-        # move cursor
-        cursor = oneForward(cursor, rruleOld)
+        # delete the old RepeatEvent object
+        repeat.delete()
 
-    # remove last comma
-    ids = ids[:-1]
+        # loop from head to event_start, making new Event objects
+        cursor = head
+        ids = ''
+        while cursor < event_start:
+            # check if current date is a break
+            if cursor in breaks:
+                continue
 
-    return HttpResponse(ids)
+            # make new event and save
+            event = Event(
+                user=user,
+                title=title,
+                start=cursor,
+                end=cursor,
+                allDay=allDay
+            )
+
+            # add length of event if it exists
+            if event_end:
+                event.end += event_length
+
+            # save the event
+            event.save()
+
+            # add id to ids csv string
+            ids += str(event.id) + ','
+
+            # move cursor
+            cursor = oneForward(cursor, rruleOld)
+
+        # remove last comma
+        ids = ids[:-1]
+
+        return HttpResponse(ids)
+    else:
+        return HttpResponseRedirect('/')
+
 
 
 # ------------------------------------------------------------------------
@@ -397,58 +428,61 @@ def free_repeat(request):
 @csrf_exempt
 def share_event(request):
 
-    # unload the sent data
-    to_user = request.POST["user"]
-    title = request.POST["title"]
-    start = strToDateTime(request.POST["start"])
-    end = strToDateTime(request.POST["end"])
-    allDay = True if (request.POST["allDay"] == "true") else False
-    type = request.POST["type"]
-    rrule = request.POST["rrule"]
-    endRepeat = strToDateTime(request.POST["endRepeat"])
+    if request.method == 'POST':
+        # unload the sent data
+        to_user = request.POST["user"]
+        title = request.POST["title"]
+        start = strToDateTime(request.POST["start"])
+        end = strToDateTime(request.POST["end"])
+        allDay = True if (request.POST["allDay"] == "true") else False
+        type = request.POST["type"]
+        rrule = request.POST["rrule"]
+        endRepeat = strToDateTime(request.POST["endRepeat"])
 
-    # convert 'null' to None where needed
+        # convert 'null' to None where needed
 
-    # get the actual user
-    user = User.objects.filter(username = to_user)[0]
+        # get the actual user
+        user = User.objects.filter(username = to_user)[0]
 
-    # handle if non-repeating event
-    if type == "event":
-        shared_event = Event(
+        # handle if non-repeating event
+        if type == "event":
+            shared_event = Event(
+                user = user,
+                title = title,
+                start = start,
+                end = end,
+                allDay = allDay
+            )
+
+        # handle if repeating event
+        else:
+            shared_event = RepeatEvent(
+                user = user,
+                title = title,
+                start = start,
+                end = end,
+                allDay = allDay,
+                rrule =  rrule,
+                endRepeat = endRepeat
+            )
+
+        # save the shared event
+        shared_event.save()
+
+        # leave a message for whoever we shared with
+        slash_date = str(start.month) + "/" + str(start.day) + "/" + str(start.year)[2] + str(start.year)[3]
+        repeat_message = "an" if (type == "event") else "a repeating"
+        start_message = "" if (type == "event") else "starting "
+        message = request.user.username + " added " + repeat_message + " event to your calendar " + start_message + "on " + slash_date
+        note = Note(
             user = user,
-            title = title,
-            start = start,
-            end = end,
-            allDay = allDay
+            message = message
         )
+        note.save()
 
-    # handle if repeating event
+        return HttpResponse ("event shared")
     else:
-        shared_event = RepeatEvent(
-            user = user,
-            title = title,
-            start = start,
-            end = end,
-            allDay = allDay,
-            rrule =  rrule,
-            endRepeat = endRepeat
-        )
-
-    # save the shared event
-    shared_event.save()
-
-    # leave a message for whoever we shared with
-    slash_date = str(start.month) + "/" + str(start.day) + "/" + str(start.year)[2] + str(start.year)[3]
-    repeat_message = "an" if (type == "event") else "a repeating"
-    start_message = "" if (type == "event") else "starting "
-    message = request.user.username + " added " + repeat_message + " event to your calendar " + start_message + "on " + slash_date
-    note = Note(
-        user = user,
-        message = message
-    )
-    note.save()
-
-    return HttpResponse ("event shared")
+        return HttpResponseRedirect('/')
 
 
 

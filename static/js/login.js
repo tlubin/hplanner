@@ -6,6 +6,7 @@
  * To change this template use File | Settings | File Templates.
  */
 minPassLength=4;
+maxUserLength=20;
 
 $(document).ready(function() {
     // event handler for login pressed
@@ -87,6 +88,11 @@ function register() {
     if(pword1.length < minPassLength)
     {
         $('#register_message').text("Please enter a longer password.");
+        return;
+    }
+    if(username.length > maxUserLength)
+    {
+        $('#register_message').text("Please enter a shorter username.");
         return;
     }
     // ensure matching passwords

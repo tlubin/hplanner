@@ -13,12 +13,12 @@ function initializeForm() {
         if(e.which==13) { e.preventDefault(); addItem(); }
     });
 
-
     // the items list will be sortable.
     $( "ul#items" ).sortable({
         update: function( event, ui ) {
             UpdateOrder($(this).sortable('toArray'));
-        }
+        },
+        axis: 'y'
     }).disableSelection();
 
     // populate the to do list with all the tasks in the database
@@ -63,24 +63,41 @@ function addItem() {
 
 function AppendItem( itemTitle, itemId) {
     // build checkbox
-    var checkbox = "<img src ='http://www-03.ibm.com/software/lotus/symphony/gallery.nsf/GalleryClipArtAll/DB4C92E3748B027785257596003148CF/$File/Sign-Checkmark02-Green.png' width='32px;' height='24px;' id='checker' style='float: right'/>";
+    var checkbox = "<img src='../static/images/checkbox.png' id='checker' width='19px' style='float: right'/>";
+    var checkbox2 = "<img src='../static/images/checkbox2.png' id='checker2' width='19px' style='float: right'/>";
 
     // build list item, add an id (which may be a placeholder, hide it
-    var $listItem = $("<li class='ui-state-default'> " + itemTitle + checkbox + "</li>");
+    var $listItem = $("<li class='ui-state-default'> " + itemTitle + checkbox + checkbox2 +"</li>");
     $listItem.attr('id', itemId);
-    $listItem.find("#checker").hide();
-
     $listItem.hide();
-    $listItem.mouseover( function(){
+    $listItem.find("#checker").hide();
+    $listItem.find("#checker2").hide();
+
+    //set up animation with checkbox
+    // if you scroll enter the to_do div, show the small check
+    $listItem.mouseenter( function(){
         $listItem.find("#checker").show();
+        $listItem.find("#checker2").hide();
 
     });
+    // if you leave the to_do div, hide the small check
     $listItem.mouseleave( function(){
         $listItem.find("#checker").hide();
+        $listItem.find("#checker2").hide();
+    });
+    // if you scroll over the check itself, hide the small, show the big
+    $listItem.find("#checker").mouseenter( function(){
+        $listItem.find("#checker").hide();
+        $listItem.find("#checker2").show();
+    });
+    // if you leave the check itself, hide the big, show the small
+    $listItem.find("#checker2").mouseleave( function(){
+        $listItem.find("#checker2").hide();
+        $listItem.find("#checker").show();
     });
 
 //  remove the corresponding list item when remove is clicked, and update the TaskManager to store the new order
-    $listItem.find("#checker").click( function() {
+    $listItem.find("#checker2").click( function() {
         REMOVEfromDATABASE($(this).parent().attr("id"));
         $(this).parent().hide('slow', function() {
             $(this).remove();
@@ -111,8 +128,10 @@ function LOADTASKS()
     );
 }
 
+
 function JSONtoTASKS(json)
 {
+    // make another http request to figure out the order in which we want to display the tasks, the do it
     $.ajax(
         {
             type:"GET",
@@ -120,8 +139,8 @@ function JSONtoTASKS(json)
             dataType: "json",
             success: function (data)
             {
-                // get the order of elements as an array
-                if (data.length != 0) {
+                if (data.length != 0)
+                {
                     csv_order = data[0]["fields"]["order"];
                     order = csv_order.split(',');
 
@@ -136,7 +155,6 @@ function JSONtoTASKS(json)
                         }
                     }
                 }
-
             }
         }
     );
@@ -144,10 +162,13 @@ function JSONtoTASKS(json)
 
 function ADDtoDATABASE($listItem)
 {
+    // package up the data to send to the server
     var item_to_send = {
         title: $listItem.text()
         // todo add a date
     };
+
+    // send it, modifying the list element according to how the database saves it
     $.ajax(
         {
             type: "POST",
@@ -168,7 +189,6 @@ function REMOVEfromDATABASE(id_to_delete)
 {
     var item_to_send = {
         id: id_to_delete
-        // todo add a date
     };
     $.ajax(
         {

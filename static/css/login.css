@@ -5,6 +5,11 @@ body {
     background: #f4f4f4;
     font: 14px;
     font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+
+    background-image: url(../images/loginpage.png);
+    -webkit-background-size: cover;
+    -o-background-size: cover;
+
 }
 
 .link { text-align: center; clear: both; padding: 20px 0; }
@@ -20,9 +25,11 @@ body {
 /* Form 1 style */
 
 .form1 {
-    width: 450px;
+    width: 437px;
     float: right;
     clear: right;
+    margin-top: 118px;
+    margin-bottom: 18px;
     background: #fff;
     color: #777;
     -webkit-box-shadow: 0px 0px 8px 2px #d1d1d1;
@@ -190,7 +197,7 @@ body {
 /* Form 2 Style */
 
 .form2 {
-    width: 450px;
+    width: 437px;
     float: right;
     clear: right;
     background: #fff;
@@ -241,6 +248,7 @@ body {
 {
     text-align: center;
     color: #3cb371;
+    font-size: 22px;
 
 }
 #picture{
@@ -248,10 +256,6 @@ body {
     margin-top: 50px;
     margin-left: 50px;
 
-}
-#logo
-{
-    font-size: 22px;
 }
 .error_message
 {

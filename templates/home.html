@@ -60,7 +60,7 @@
     <script>
         {#        need more recent version of jquery ui for this to work properly so apply it specifically to this#}
         $(function() {
-            jq192( "#repeat_datepicker" ).datepicker({
+            jq192( "#end_repeat" ).datepicker({
                 showOtherMonths: true,
                 selectOtherMonths: true
             });
@@ -81,6 +81,7 @@
 
 
 
+
 </head>
 
 <body>
@@ -89,23 +90,28 @@
     <li id="log_outbutton" onclick="location.href='logout'">
         <a href="javascript: void(0)">Logout</a>
     </li>
-    <li style="width: 200px">
+    <li style="width: 400px">
         <a href="#">Notifications</a>
         <ul id="notifications" class="notification">
 
         </ul>
     </li>
+
+        <img src="../static/images/newEvent.png" width="200px;" height="40px;" style="float: right; text-align: center; margin-right: 230px;"/>
+
 </ul>
 
 <div id='calendar'></div>
 
 <div id="todo_div">
-    <h3>Add Item To Do</h3>
-    <form>
-        <input type="text" id="todo_input"/>
-        <a href="javascript: void(0)" id="add-item">Add</a>
-    </form>
-    <br/>
+    <ul class="sortable">
+        <li class="ui-state-default" style="background: #4682b4">
+            <form>
+                <input type="text" id="todo_input" placeholder="New To-do Item" maxlength="32" size="30" autocomplete="off"/>
+                <a href="javascript: void(0)" id="add-item"></a>
+            </form>
+        </li>
+    </ul>
     <ul id="items" class="sortable"></ul>
 </div>
 
@@ -114,25 +120,25 @@
         <input type="hidden" />
         <ul>
             <li>
-                <label for="title">Title:</label><input id="title" type="text" size="37" maxlength="37"/><br/>
+                <label class='align_left' for="title">Title:</label><input class='align_right' id="title" type="text" size="37" maxlength="37" autocomplete="off"/><br/><br/>
                 <div id="share_div">
-                     <label for="share">Share with: </label><input id="share" class = "ui" type="text" size="37"><br/>
+                     <label class='align_left' for="share">Share: </label><input class='align_right' id="share" class = "ui" type="text" size="37"><br/><br/>
                 </div>
-                <label for="start_datepicker">Start:</label><input id="start_datepicker" type="text" size="11" maxlength="10"/>
+                <label class='align_left' for="start_datepicker">Start:</label><input class='align_datepick' id="start_datepicker" type="text" size="11" maxlength="10"/>
                 <label for="start_hour">    </label><input class='hour_filter' id="start_hour" type="text" size="2" maxlength="2"/>
                 <label for="start_min"> : </label><input class='min_filter' id="start_min" type="text" size="2" maxlength="2"/>
                 <select id="start_ampm">
                     <option value="AM">AM</option>
                     <option value="PM">PM</option>
-                </select> <br/>
-                <label for="end_datepicker">  End: </label><input id="end_datepicker" type="text" size="11" maxlength="10"/>
+                </select> <br/><br/>
+                <label class='align_left' for="end_datepicker">  End: </label><input class='align_datepick' id="end_datepicker" type="text" size="11" maxlength="10"/>
                 <label for="end_hour">  </label><input class='hour_filter' id="end_hour" type="text" size="2" maxlength="2"/>
                 <label for="end_min"> : </label><input class='min_filter' id="end_min" type="text" size="2" maxlength="2"/>
                 <select id="end_ampm">
                     <option value="AM">AM</option>
                     <option value="PM">PM</option>
-                </select> <br/>
-                <label for="allDay"> All Day? </label><input id="allDay" type="checkbox">
+                </select> <br/><br/>
+                <label class='align_left' for="allDay"> All Day? </label><input id="allDay" type="checkbox"><br/><br/>
                 <label for="rrule">Repeat:</label>
                 <select id="rrule">
                     <option value ="0">none</option>
@@ -140,9 +146,7 @@
                     <option value="7">weekly</option>
                     <option value="14">biweekly</option>
                 </select>
-                <div id="end_repeat">
-                    <label for="repeat_datepicker">End: </label><input id="repeat_datepicker" type="text" size="11" maxlength="10"/>
-                </div>
+                <input id="end_repeat" class='align_lastpick' placeholder="Stop Repeating" type="text" size="12" maxlength="10"/>
             </li>
         </ul>
     </form>

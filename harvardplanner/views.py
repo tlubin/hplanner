@@ -19,16 +19,20 @@ def login_view(request):
 
 @csrf_exempt
 def login_check(request):
-    username = request.POST['username']
-    pword = request.POST['password']
-    user = authenticate(username=username, password=pword)
-    if user is not None:
-        # log the user in to set the session id global
-        login(request, user)
-        # Success!
-        return HttpResponse('success')
+    if request.method == 'POST':
+        username = request.POST['username']
+        pword = request.POST['password']
+        user = authenticate(username=username, password=pword)
+        if user is not None:
+            # log the user in to set the session id global
+            login(request, user)
+            # Success!
+            return HttpResponse('success')
+        else:
+            return HttpResponse("invalid login")
     else:
-        return HttpResponse("invalid login")
+        return HttpResponseRedirect('/')
+
 
 def logout_view(request):
     logout(request)
@@ -37,35 +41,41 @@ def logout_view(request):
 
 @csrf_exempt
 def register(request):
-    username = request.POST['username']
-    pword = request.POST['password']
+    if request.method == 'POST':
+        username = request.POST['username']
+        pword = request.POST['password']
 
-    print username
-    print pword
-    # register the new user
-    try:
-        User.objects.create_user(username, password=pword)
-        # log user in
-        user = authenticate(username=username, password=pword)
-        login(request, user)
-        # Success!
-        return HttpResponse('success')
-    except:
-        return HttpResponse('failure')
+        print username
+        print pword
+        # register the new user
+        try:
+            User.objects.create_user(username, password=pword)
+            # log user in
+            user = authenticate(username=username, password=pword)
+            login(request, user)
+            # Success!
+            return HttpResponse('success')
+        except:
+            return HttpResponse('failure')
+    else:
+        return HttpResponseRedirect('/')
 
 
 # ------------------------------------------------------------------------
 # Returns all the User objects. Used for autocomplete in sharing.
 # ------------------------------------------------------------------------
 def get_users(request):
-    # get all the users
-    users = User.objects.all()
+    if request.is_ajax():
+        # get all the users
+        users = User.objects.all()
 
-    # exclude the current user
-    users = users.exclude(username=request.user.username)
+        # exclude the current user
+        users = users.exclude(username=request.user.username)
 
-    # convert user data to JSON
-    json_data = serializers.serialize('json', users)
-    return HttpResponse (json_data, mimetype='application/json')
+        # convert user data to JSON
+        json_data = serializers.serialize('json', users)
+        return HttpResponse (json_data, mimetype='application/json')
+    else:
+        return HttpResponseRedirect('/')
 
 

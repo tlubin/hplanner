@@ -37,19 +37,18 @@ function JSONtoNOTES(json)
 
 function AppendNote( noteTitle, noteId) {
     // build checkbox to close notification
-    var closeBox = "<input type='checkbox' id='closeBox' style='float: right'/>";
-
 
     // build notification list item
-    var $notification = $("<li class='notificationClass'> " + noteTitle + closeBox + "</li>");
+    var $notification = $("<li class='notificationClass'><a href='javascript: void(0)'>" + noteTitle + "</a></li >");
     $notification.attr('id', noteId);
     $notification.hide();
 
 
 //  remove the corresponding list item when remove is clicked, and remove that one from the database
-    $notification.find("#closeBox").click( function() {
-        RemoveNoteFromDatabase($(this).parent().attr("id"));
-        $(this).parent().hide('slow', function() {
+    $notification.click( function() {
+
+        RemoveNoteFromDatabase($(this).attr("id"));
+        $(this).hide(400, function() {
             $(this).remove();
         });
     });

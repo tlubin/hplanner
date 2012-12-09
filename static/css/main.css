@@ -38,13 +38,13 @@ p {
 #calendar {
     width: 70%;
     float: left;
-    margin-left: 30px;
+    margin-left: 15px;
 }
 
 #todo_div {
-    width: 20%;
+    width: 25%;
     float: right;
-    margin-right: 40px;
+    margin-right: 25px;
     padding-top: 20px;
 
 }
@@ -130,8 +130,8 @@ p {
 #menu{
     width: 100%;
     margin: 0;
-    padding-top: 10px;
-    margin-bottom: 45px;
+    padding-top: 20px;
+    margin-bottom: 35px;
     list-style: none;
     background: #4682b4;
     background: -moz-linear-gradient(#4682b4, #4682b4);
@@ -157,18 +157,19 @@ p {
 #menu a{
     float: right;
     height: 25px;
-    padding: 0 25px;
+    padding-right: 50px;
+
     /*color of text in the menu*/
-    color: #f5f5f5;
+    color: #d0d0d0;
     text-transform: uppercase;
-    font: bold 14px/25px Arial, Helvetica;
+    font: bold 16px/25px Arial, Helvetica;
     text-decoration: none;
     text-shadow: 0 1px 0 #000;
 }
 
 #menu li:hover > a{
     /*color when you hover*/
-    color: #fafafa;
+    color: #ffffff;
 }
 
 *html #menu li a:hover{ /* IE6 */
@@ -195,10 +196,11 @@ p {
     background: -webkit-gradient(linear,left bottom,left top,color-stop(0, #4682b4),color-stop(1, #4682b4));
     background: -webkit-linear-gradient(#4682b4, #4682b4);
     background: -o-linear-gradient(#4682b4, #4682b4);
-    background: -ms-linear-gradient(#4682b4, #4682b4);
-    background: linear-gradient(#4682b4, #4682b4);
-    /*-moz-border-radius: 5px;*/
-    /*border-radius: 5px;*/
+    background: -ms-linear-gradient(#7f8cb4, #7f8cb4);
+    background: linear-gradient(#7f8cb4, #7f8cb4);
+    -moz-border-radius: 5px;
+    border-radius: 5px;
+    border-bottom-color: gray;
 }
 
 #menu ul li{
@@ -294,5 +296,40 @@ p {
     margin: 5px, 5px, 0, 0;
     font-size: 14px;
     font: helvetica;
+}
+
+.align_left {
+    width: 24%;
+    float: left;
+    text-align: left;
 
 }
+
+.align_right {
+    width: 60%;
+    float: left;
+    text-align: left;
+
+}
+
+.align_datepick {
+     width: 27%;
+     float: right;
+     text-align: left;
+ }
+
+.align_lastpick {
+    width: 27%;
+    float: right;
+    text-align: right;
+}
+
+
+
+
+/*#menu{*/
+    /*padding:0;*/
+    /*margin:0;*/
+/*}*/
+
+/*#menu*/

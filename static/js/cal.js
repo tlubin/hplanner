@@ -202,7 +202,7 @@ function initializeCalendar(events) {
             right: 'month,agendaWeek,agendaDay'
         },
         weekMode: 'liquid',
-        height: 600,
+        height: 650,
         allDayDefault: false,
         editable: true,
         selectable: true,
@@ -264,7 +264,6 @@ function initializeCalendar(events) {
 
         // eventClick (when an event is clicked) brings up a dialog, from which the event can be edited
         eventClick: function(calEvent, jsEvent, view) {
-            console.log(calEvent);
 
             // clear the form
             clearEventForm();
@@ -651,29 +650,6 @@ function initializeCalendar(events) {
                     }).show();
                 }
             }
-        },
-        droppable: true, // this allows things to be dropped onto the calendar !!!
-        drop: function(date, allDay) { // this function is called when something is dropped
-            // retrieve the dropped element's stored Event Object
-            var dropppedObject = $(this).data('eventObject');
-            // TODO: handle dropped object
-            // we need to copy it, so that multiple events don't have a reference to the same object
-//                        var copiedEventObject = $.extend({}, originalEventObject);
-//
-//                        // assign it the date that was reported
-//                        copiedEventObject.start = date;
-//                        copiedEventObject.allDay = allDay;
-//
-//                        // render the event on the calendar
-//                        // the last `true` argument determines if the event "sticks" (http://arshaw.com/fullcalendar/docs/event_rendering/renderEvent/)
-//                        $('#calendar').fullCalendar('renderEvent', copiedEventObject, true);
-//
-//                        // is the "remove after drop" checkbox checked?
-//                        if ($('#drop-remove').is(':checked')) {
-//                            // if so, remove the element from the "Draggable Events" list
-//                            $(this).remove();
-//                        }
-
         }
     });
 }
@@ -694,7 +670,7 @@ function clearEventForm() {
     $("#allDay").attr('checked', false);
     $("#rrule").val("0");
     $("#end_repeat").hide();
-    $("repeat_datepicker").val('');
+    $("end_repeat").val('');
     $("#share").val('');
     $('#share_div').hide();
 }
@@ -808,7 +784,6 @@ function edit_repeat(event, oldStart, oldEnd, oldrrule) {
     var events_behind = calendar.fullCalendar('clientEvents', function(e) {
         return (e.type == 'repeat' && e.sid == event.sid && e.start < oldStart && e.id != event.id);
     });
-    console.log(events_behind);
     if (events_behind.length == 1) {
         // only the head is left, turn this into an event object
         var head = events_behind[0];
@@ -967,7 +942,6 @@ function break_repeat(event) {
     calendar.fullCalendar("render");
 
     // update database
-    console.log(event);
     makePOST('cal/break_repeat', event);
 }
 
@@ -987,7 +961,6 @@ function free_repeat(event) {
             data:$.param(event),
             dataType: "text",
             success: function (data) {
-                console.log('csv: ' + data);
                 // convert csv data into array of sids to be assigned to the events
                 sids = data.split(',');
 
@@ -1060,7 +1033,6 @@ function makePOST(url, event) {
             data:$.param(event),
             dataType: "text",
             success: function (data) {
-                console.log(data);
             }
         }
     );
@@ -1175,9 +1147,8 @@ function click_prepopulate(calEvent)
     // populate rrule and endRepeat if event is repeat
     if (calEvent.type == 'repeat') {
         $("#rrule").val(calEvent.rrule.toString());
-        console.log(calEvent.endRepeat);
         if (calEvent.endRepeat)
-            $("#repeat_datepicker").val(DatetimetoSlashdate($.fullCalendar.parseDate(calEvent.endRepeat)));
+            $("#end_repeat").val(DatetimetoSlashdate($.fullCalendar.parseDate(calEvent.endRepeat)));
 
         // show the endRepeat if rrule is not none
         if ($("#rrule").val() != '0') {
@@ -1204,7 +1175,7 @@ function getUserInput(start) {
     var type = (rrule != "0") ? 'repeat' : 'event';
 
     // endRepeat ("" if there is no rrule or if the event repeats forever)
-    var endRepeat = ($("#repeat_datepicker").val()) ? toDatetime($("#repeat_datepicker").val(), 0, 0, 'AM') : null;
+    var endRepeat = ($("#end_repeat").val()) ? toDatetime($("#end_repeat").val(), 0, 0, 'AM') : null;
 
     // get start time data
     var start_date = $("#start_datepicker").val();
@@ -1366,7 +1337,6 @@ function configureAutocomplete()
                     userList.push(data[user]['fields']["username"]);
 
 
-                console.log(userList);
 
                 // the following is copied from http://jqueryui.com/autocomplete/#multiple, just sets p autocomplete for sharing
                 jq183(function() {
@@ -1448,7 +1418,6 @@ function share_event(event_to_share, share_input)
         rrule: event_to_share.rrule,
         endRepeat: event_to_share.endRepeat
     };
-    console.log(sharing_event);
 
     // share event with each user
     for (var user in users_array) {
